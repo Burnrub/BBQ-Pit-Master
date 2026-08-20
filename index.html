@@ -1,0 +1,3338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BBQ Pit-Master Timer — Smoker Cook Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --char-900:#120E0A;
+    --char-800:#1A140E;
+    --char-700:#221A12;
+    --slate-card:#241C14;
+    --slate-card-2:#2C2216;
+    --line:#3A2C1C;
+    --line-soft:#2E2418;
+    --text-hi:#F6EFE4;
+    --text-mid:#C9BBA6;
+    --text-dim:#8C7C67;
+    --amber:#FF8C24;
+    --amber-hi:#FFB35C;
+    --amber-dim:#7A4B18;
+    --coral:#FF5A4E;
+    --coral-hi:#FF8377;
+    --ember:#FF5A00;
+    --gray-muted:#6B6459;
+    --ring-track:#3A2E20;
+    --radius-lg:18px;
+    --radius-md:12px;
+    --radius-sm:8px;
+    --shadow-card:0 8px 24px -12px rgba(0,0,0,0.6);
+    /* Layered elevation tokens: outer drop shadow + top inner highlight + bottom inner shade,
+       used together to give flat surfaces a subtle embossed / raised feel. */
+    --edge-hi: inset 0 1px 0 rgba(255,241,222,0.06);
+    --edge-lo: inset 0 -1px 0 rgba(0,0,0,0.35);
+    --lift-sm: 0 1px 2px rgba(0,0,0,0.4), 0 4px 10px -6px rgba(0,0,0,0.55);
+    --lift-md: 0 2px 4px rgba(0,0,0,0.35), 0 10px 22px -10px rgba(0,0,0,0.65);
+    --lift-lg: 0 4px 8px rgba(0,0,0,0.35), 0 20px 40px -16px rgba(0,0,0,0.7);
+    --well-inset: inset 0 2px 5px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,241,222,0.04);
+    --border-defined: 1px solid var(--line);
+    --font-display:'Oswald', 'Arial Narrow', sans-serif;
+    --font-mono:'Space Mono','SFMono-Regular', Consolas, monospace;
+    --font-body:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,140,36,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(255,90,78,0.05), transparent 55%),
+      var(--char-900);
+    color:var(--text-hi);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    /* Extra clearance so the fixed "Cook Log & Notes" bar never overlaps the
+       last row of content, plus the iPhone home-indicator safe area (this
+       page opts into edge-to-edge layout via viewport-fit=cover). */
+    padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  ::selection{background:var(--amber);color:var(--char-900);}
+  button{font-family:inherit;}
+  input, textarea{font-family:inherit;}
+
+  /* focus visibility */
+  button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--amber-hi);
+    outline-offset:2px;
+  }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 18px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    position:sticky; top:0; z-index:40;
+    background:linear-gradient(180deg, rgba(18,14,10,0.97), rgba(18,14,10,0.9));
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line-soft);
+    box-shadow:0 6px 20px -8px rgba(0,0,0,0.55);
+  }
+  .top-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px;
+    max-width:1080px; margin:0 auto;
+    gap:12px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; padding:2px; margin:-2px; border-radius:10px;
+    transition:opacity .15s ease;
+  }
+  .brand:hover{opacity:0.85;}
+  .brand:active{opacity:0.7;}
+  .brand:focus-visible{ outline:2px solid var(--amber-hi); outline-offset:3px; }
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:conic-gradient(from 220deg, var(--ember), var(--amber) 45%, var(--coral) 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 1px rgba(255,220,180,0.5), inset 0 -3px 5px rgba(120,30,0,0.45), 0 6px 16px -6px rgba(255,110,30,0.5);
+    flex:none;
+    border:1px solid rgba(0,0,0,0.2);
+  }
+  .brand-mark svg{width:22px;height:22px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4));}
+  .brand-text{ position:relative; }
+  .brand-text h1{
+    position:relative; display:inline-block;
+    font-family:var(--font-display);
+    font-size:21px; font-weight:700; letter-spacing:0.015em;
+    margin:0; line-height:1.2; text-transform:uppercase;
+    white-space:nowrap;
+    /* Soft vertical enamel gradient - a gentle amber-to-ember sheen rather
+       than a multi-hue rainbow, so it reads as a polished wordmark. */
+    background:linear-gradient(180deg, #FFE3AE 0%, #FFB25C 40%, #FF8A3D 70%, #FF6A2E 100%);
+    background-size:100% 220%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    /* One crisp highlight edge + one soft depth shadow = subtle emboss,
+       not a stacked "sticker" outline. */
+    text-shadow:
+      0 1px 0 rgba(255,255,255,0.22),
+      0 2px 3px rgba(107,22,0,0.45),
+      0 5px 12px rgba(255,110,40,0.25);
+    animation: brandShimmer 8s ease-in-out infinite;
+  }
+  @keyframes brandShimmer{
+    0%, 100%{ background-position:50% 0%; }
+    50%{ background-position:50% 100%; }
+  }
+  .sparkle{
+    position:absolute; font-size:9px; line-height:1; color:#FFD98A;
+    text-shadow:0 0 5px rgba(255,217,138,0.85), 0 0 10px rgba(255,140,36,0.5);
+    animation: sparkleTwinkle 3.2s ease-in-out infinite;
+    pointer-events:none; user-select:none;
+  }
+  .sparkle-1{ top:-6px; right:-13px; animation-delay:0s; }
+  .sparkle-2{ bottom:0; left:-10px; font-size:6px; animation-delay:1.5s; }
+  @keyframes sparkleTwinkle{
+    0%,100%{ opacity:0.15; transform:scale(0.7) rotate(0deg); }
+    50%{ opacity:0.9; transform:scale(1.05) rotate(12deg); }
+  }
+  .brand-text p{
+    margin:2px 0 0; font-size:11px; color:var(--text-dim);
+    letter-spacing:0.14em; text-transform:uppercase;
+  }
+
+  .top-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+
+  .toggle-pill, .sound-toggle{
+    display:flex; align-items:center; gap:8px;
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 12px 6px 6px;
+    cursor:pointer;
+    user-select:none;
+    min-height:40px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+    transition:box-shadow .15s ease, transform .12s ease;
+  }
+  .toggle-pill:active, .sound-toggle:active{transform:translateY(1px); box-shadow:var(--well-inset);}
+  .toggle-pill .dot, .sound-toggle .dot{
+    width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--char-700);
+    transition:background .2s ease;
+    flex:none;
+    box-shadow:var(--well-inset);
+  }
+  .toggle-pill.on .dot, .sound-toggle.on .dot{background:var(--amber); box-shadow:0 0 12px rgba(255,140,36,0.6), inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(120,50,0,0.4);}
+  .toggle-pill svg, .sound-toggle svg{width:16px;height:16px;stroke:var(--text-hi);}
+  .toggle-pill .lbl, .sound-toggle .lbl{font-size:12px; color:var(--text-mid); letter-spacing:0.04em; white-space:nowrap;}
+  .toggle-pill.on .lbl, .sound-toggle.on .lbl{color:var(--text-hi);}
+  .toggle-pill:disabled{opacity:0.4; cursor:not-allowed;}
+  .toggle-pill:disabled .dot{background:var(--char-700) !important; box-shadow:none !important;}
+
+  /* ---------- Temperature unit toggle ---------- */
+  .unit-toggle{
+    display:flex; gap:2px; padding:3px;
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line); border-radius:999px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .unit-btn{
+    border:none; background:transparent; color:var(--text-mid);
+    font-family:var(--font-mono); font-weight:700; font-size:12px;
+    padding:6px 11px; border-radius:999px; cursor:pointer;
+    min-height:28px; transition:background .15s ease, color .15s ease;
+  }
+  .unit-btn.active{ background:var(--amber); color:#241304; box-shadow:0 0 10px rgba(255,140,36,0.45); }
+
+  /* ---------- Flame decoration (static, layered, semi-transparent) ---------- */
+  .flame-icon{ display:inline-block; }
+  .flame-real{ display:block; overflow:visible; }
+  .flame-real .fr-outer{ opacity:0.55; }
+  .flame-real .fr-mid{ opacity:0.82; }
+  .flame-real .fr-core{ opacity:0.95; }
+  .flame-real.glow{ filter:drop-shadow(0 0 4px rgba(255,140,36,0.4)); }
+
+  .hero-flames{
+    position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+  }
+  .hero-flames svg{
+    position:absolute; bottom:-6px;
+  }
+  .hero-flames svg.f1{ left:6%; width:70px; opacity:0.24; }
+  .hero-flames svg.f2{ left:22%; width:46px; opacity:0.15; transform:rotate(-4deg); }
+  .hero-flames svg.f3{ right:14%; width:88px; opacity:0.22; transform:rotate(3deg); }
+  .hero-flames svg.f4{ right:32%; width:40px; opacity:0.14; transform:rotate(-2deg); }
+  header.top{ position:sticky; top:0; z-index:40; overflow:hidden; }
+
+  .status-chip{ display:inline-flex; align-items:center; gap:4px; }
+  .status-chip .chip-flame{ width:11px; height:11px; flex:none; }
+
+  /* ---------- BBQ style toggle (Low & Slow / Hot & Fast) ---------- */
+  .style-toggle-row{
+    display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;
+  }
+  .style-btn{
+    flex:1 1 160px;
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:11px 14px;
+    cursor:pointer;
+    color:var(--text-mid);
+    text-align:left;
+    transition:border-color .15s ease, background .15s ease, box-shadow .15s ease, color .15s ease;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .style-btn .flame-real{ width:20px; height:20px; flex:none; }
+  .style-btn:not(.active) .flame-real{ filter:grayscale(1) brightness(0.75); opacity:0.5; }
+  .style-btn .sb-text{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .style-btn .sb-name{ font-family:var(--font-display); font-weight:600; font-size:13.5px; letter-spacing:0.02em; text-transform:uppercase; color:var(--text-hi); }
+  .style-btn .sb-temp{ font-family:var(--font-mono); font-size:11px; color:var(--text-dim); }
+  .style-btn.active{
+    border-color:var(--amber);
+    background:linear-gradient(165deg, rgba(255,140,36,0.16), rgba(255,140,36,0.05));
+    box-shadow:var(--lift-md), var(--edge-hi), 0 0 0 1px rgba(255,140,36,0.25) inset;
+  }
+  .style-btn.active .sb-temp{ color:var(--amber-hi); }
+  .style-blurb{
+    margin-top:10px; font-size:12px; line-height:1.5; color:var(--text-dim);
+    padding:10px 12px; background:var(--char-700); border:1px solid var(--line-soft); border-radius:var(--radius-sm);
+  }
+  .style-blurb strong{ color:var(--text-mid); }
+  .steps-hint{
+    font-size:11.5px; color:var(--text-dim); line-height:1.4;
+    margin:4px 2px 10px;
+  }
+  .total-cook-time{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin-top:14px; padding:12px 16px;
+    background:linear-gradient(90deg, rgba(255,140,36,0.16), var(--char-700) 75%);
+    border:1px solid rgba(255,140,36,0.35); border-radius:var(--radius-md);
+    box-shadow:var(--well-inset);
+  }
+  .total-cook-time .tct-label{
+    font-family:var(--font-display); font-size:11.5px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--text-mid); font-weight:600;
+  }
+  .total-cook-time .tct-value{
+    font-family:var(--font-mono); font-weight:700; font-size:19px; color:var(--amber-hi);
+    font-variant-numeric:tabular-nums;
+  }
+  .ps-adjust{
+    display:block; font-size:10.5px; color:var(--coral-hi); font-weight:600; line-height:1.35;
+  }
+
+  /* ---------- Stage selection (which steps get added) ---------- */
+  .stage-flame-toggle{
+    width:30px; height:30px; border-radius:50%; flex:none;
+    border:1px solid var(--line); background:var(--char-700);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:var(--well-inset);
+    transition:border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .12s ease;
+  }
+  .stage-flame-toggle .flame-real{ width:16px; height:16px; }
+  .stage-flame-toggle:not(.selected) .flame-real{ filter:grayscale(1) brightness(0.7); opacity:0.4; }
+  .stage-flame-toggle .flame-real-solid{ width:15px; height:15px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
+  .stage-flame-toggle:active{ transform:scale(0.9); }
+  /* Selected = filled with a bright ember/amber badge (same treatment as the
+     brand logo mark) so a live stage is unmistakable, with a solid dark flame
+     glyph on top for strong contrast against the bright fill. */
+  .stage-flame-toggle.selected{
+    background:conic-gradient(from 220deg, var(--ember), var(--amber) 45%, var(--coral) 100%);
+    border-color:transparent;
+    box-shadow:0 0 0 2px rgba(255,140,36,0.35), 0 3px 10px -3px rgba(255,90,30,0.7),
+      inset 0 1px 1px rgba(255,220,180,0.5), inset 0 -2px 4px rgba(120,30,0,0.4);
+  }
+  .profile-step-row{ transition:border-color .15s ease, background .15s ease, opacity .15s ease, box-shadow .15s ease; }
+  .profile-step-row.selected{
+    border-color:rgba(255,140,36,0.4);
+    background:linear-gradient(90deg, rgba(255,140,36,0.1), var(--char-700) 60%);
+    box-shadow:var(--well-inset), 0 0 0 1px rgba(255,140,36,0.12) inset;
+  }
+  .profile-step-row:not(.selected){ opacity:0.5; }
+  .profile-step-row:not(.selected) .ps-label{ color:var(--text-dim); }
+
+  /* ---------- Layout ---------- */
+  main{padding-top:20px;}
+  section{margin-bottom:26px;}
+
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:12px; gap:10px; flex-wrap:wrap;
+  }
+  .section-head h2{
+    font-family:var(--font-display);
+    font-size:13px; letter-spacing:0.18em; text-transform:uppercase;
+    color:var(--text-dim); margin:0; font-weight:600;
+  }
+  .section-head h2 .count{color:var(--amber-hi);}
+
+  .global-controls{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .btn{
+    appearance:none; border:1px solid var(--line);
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card));
+    color:var(--text-hi);
+    padding:10px 14px;
+    border-radius:var(--radius-sm);
+    font-size:13px; font-weight:600;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    letter-spacing:0.02em;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    min-height:40px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .btn:hover{background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card-2)); border-color:var(--gray-muted);}
+  .btn:active{transform:translateY(1px) scale(0.98); box-shadow:var(--well-inset);}
+  .btn.primary{
+    background:linear-gradient(180deg, var(--amber-hi), var(--amber));
+    color:#241304; border-color:transparent;
+    box-shadow:0 6px 18px -8px rgba(255,140,36,0.55), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 4px rgba(120,50,0,0.35);
+  }
+  .btn.primary:hover{filter:brightness(1.05);}
+  .btn.primary:active{box-shadow:inset 0 2px 6px rgba(120,50,0,0.5);}
+  .btn.ghost{background:transparent; box-shadow:none;}
+  .btn.ghost:hover{background:var(--slate-card-2); box-shadow:var(--lift-sm);}
+  .btn.danger-outline{border-color:var(--coral); color:var(--coral-hi); background:transparent; box-shadow:none;}
+  .btn.danger-outline:hover{background:rgba(255,90,78,0.1);}
+  .btn:disabled{opacity:0.4; cursor:not-allowed; box-shadow:none; transform:none;}
+  .btn svg{width:15px;height:15px;flex:none;}
+
+  /* ---------- Presets ---------- */
+  .preset-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:10px;
+  }
+  .preset-btn{
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:12px 14px;
+    text-align:left;
+    cursor:pointer;
+    color:var(--text-hi);
+    transition:border-color .15s ease, transform .12s ease, background .15s ease, box-shadow .15s ease;
+    min-height:64px;
+    display:flex; flex-direction:column; justify-content:center; gap:4px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .preset-btn:hover{border-color:var(--amber); background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card-2)); box-shadow:var(--lift-md), var(--edge-hi);}
+  .preset-btn:active{transform:translateY(1px) scale(0.98); box-shadow:var(--well-inset);}
+  .preset-btn{ flex-direction:row; align-items:center; gap:11px; }
+  .preset-btn .p-icon{
+    width:34px; height:34px; flex:none; border-radius:9px;
+    background:var(--char-700); border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--well-inset);
+  }
+  .preset-btn .p-icon svg{width:18px; height:18px; stroke:var(--amber-hi); filter:drop-shadow(0 1px 1px rgba(0,0,0,0.5));}
+  .preset-btn .p-text{display:flex; flex-direction:column; gap:3px; min-width:0;}
+  .preset-btn .p-time{
+    font-family:var(--font-mono); font-weight:700; color:var(--amber-hi); font-size:15px;
+  }
+  .preset-btn .p-label{font-size:12px; color:var(--text-mid); letter-spacing:0.02em;}
+
+  .preset-card{position:relative;}
+  .preset-card .preset-btn{width:100%;}
+  .preset-edit{
+    position:absolute; top:6px; right:6px;
+    width:24px; height:24px; border-radius:50%;
+    border:none; background:rgba(18,14,10,0.55); color:var(--text-dim);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s ease, color .15s ease, background .15s ease;
+  }
+  .preset-card:hover .preset-edit, .preset-card:focus-within .preset-edit{opacity:1;}
+  .preset-edit:hover{color:var(--amber-hi); background:rgba(255,140,36,0.18);}
+  .preset-edit svg{width:12px;height:12px;}
+  @media (max-width: 480px){ .preset-edit{opacity:1;} }
+
+  .preset-edit-box .confirm-message{margin-bottom:14px;}
+  .preset-edit-field{margin-bottom:12px;}
+  .preset-edit-field label{display:block; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
+  .preset-edit-field input[type="text"]{
+    width:100%; background:var(--char-800); border:1px solid var(--line); border-radius:var(--radius-sm);
+    color:var(--text-hi); padding:10px 11px; font-size:14px; font-family:var(--font-body);
+  }
+  .preset-edit-time{display:flex; gap:10px;}
+  .preset-edit-time div{flex:1;}
+  .preset-edit-time input[type="number"]{
+    width:100%; background:var(--char-800); border:1px solid var(--line); border-radius:var(--radius-sm);
+    color:var(--amber-hi); padding:10px 11px; font-size:14px; font-family:var(--font-mono); font-weight:700; text-align:center;
+  }
+  .preset-edit-actions{display:flex; gap:10px; justify-content:space-between; align-items:center;}
+  .preset-edit-error{color:var(--coral-hi); font-size:12px; margin:-4px 0 12px;}
+  .preset-edit-sub{font-size:12px; color:var(--text-mid); margin:-10px 0 14px;}
+
+  .ps-edit{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--text-dim); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:none;
+    transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .ps-edit:hover{border-color:var(--amber); color:var(--amber-hi); background:rgba(255,140,36,0.1);}
+  .ps-edit svg{width:12px;height:12px;}
+  .ps-time-wrap{display:flex; align-items:center; gap:5px; flex:none;}
+  .ps-custom-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--amber-hi); flex:none;
+    box-shadow:0 0 5px rgba(255,179,92,0.8);
+  }
+
+  /* ---------- Favorites (saved custom timers) ---------- */
+  .favorite-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:10px; margin-bottom:16px;
+  }
+  .favorite-chip{
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-md); padding:12px 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    cursor:pointer; transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .favorite-chip:hover{border-color:var(--amber); background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card-2)); box-shadow:var(--lift-md), var(--edge-hi);}
+  .favorite-chip .fav-text{display:flex; flex-direction:column; gap:3px; min-width:0; text-align:left;}
+  .favorite-chip .fav-label{font-size:12.5px; color:var(--text-hi); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;}
+  .favorite-chip .fav-time{font-family:var(--font-mono); font-size:12px; color:var(--amber-hi); font-weight:700;}
+  .favorite-remove{
+    width:24px; height:24px; border-radius:50%; border:none; background:transparent;
+    color:var(--text-dim); cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;
+  }
+  .favorite-remove:hover{color:var(--coral-hi); background:rgba(255,90,78,0.12);}
+  .favorite-remove svg{width:12px;height:12px;}
+
+  /* ---------- Meat & Temp Profiles ---------- */
+  .meat-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:10px;
+  }
+  .meat-card{
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:14px;
+    text-align:left;
+    cursor:pointer;
+    color:var(--text-hi);
+    transition:border-color .15s ease, transform .12s ease, background .15s ease, box-shadow .15s ease;
+    min-height:76px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .meat-card:hover{border-color:var(--amber); background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card-2)); box-shadow:var(--lift-md), var(--edge-hi); transform:translateY(-1px);}
+  .meat-card:active{transform:translateY(1px) scale(0.98); box-shadow:var(--well-inset);}
+  .meat-card.selected{
+    border-color:var(--amber);
+    background:linear-gradient(180deg, rgba(255,140,36,0.14), rgba(255,140,36,0.04));
+    box-shadow:var(--lift-md), var(--edge-hi), 0 0 0 1px rgba(255,140,36,0.25) inset;
+  }
+  .meat-card .m-icon{
+    width:44px; height:44px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 38% 32%, var(--slate-card-2), var(--char-700) 70%);
+    border-radius:11px;
+    border:1px solid var(--line-soft);
+    box-shadow:var(--well-inset);
+  }
+  .meat-card .m-icon svg{width:28px; height:28px; color:var(--amber-hi); filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));}
+  .meat-card.selected .m-icon{background:radial-gradient(circle at 38% 32%, rgba(255,140,36,0.22), rgba(255,140,36,0.08) 70%); border-color:rgba(255,140,36,0.4);}
+  .meat-card .m-text{display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .meat-card .m-name{
+    font-family:var(--font-display); font-weight:600; font-size:14.5px;
+    text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .meat-card .m-temp{
+    font-family:var(--font-mono); font-size:12px; color:var(--amber-hi); font-weight:700;
+  }
+  .meat-card.selected .m-temp{color:var(--amber-hi);}
+
+  .profile-panel{
+    margin-top:14px;
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:18px;
+    animation:panelIn .18s ease;
+    box-shadow:var(--lift-md), var(--edge-hi);
+  }
+  @keyframes panelIn{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+
+  .profile-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .profile-name{
+    font-family:var(--font-display); font-size:18px; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.02em; color:var(--text-hi);
+  }
+  .profile-hint{font-size:12px; color:var(--text-dim); margin-top:3px; max-width:420px;}
+  .profile-close{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--text-dim); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .profile-close:hover{color:var(--coral-hi); border-color:var(--coral);}
+  .profile-close svg{width:14px;height:14px;}
+
+  .profile-temp-row{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    margin:16px 0 6px;
+    padding:12px 14px;
+    background:var(--char-700);
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    box-shadow:var(--well-inset);
+  }
+  .profile-temp-row label{
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim);
+  }
+  .temp-input-wrap{display:flex; align-items:center; gap:0; background:var(--char-800); border:1px solid var(--line); border-radius:999px; overflow:hidden; box-shadow:var(--well-inset);}
+  .temp-step{
+    width:38px; height:38px; border:none; background:transparent; color:var(--text-hi);
+    font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-weight:700; line-height:1;
+  }
+  .temp-step:hover{background:var(--slate-card-2); color:var(--amber-hi);}
+  #profileTemp{
+    width:58px; text-align:center; background:transparent; border:none; color:var(--amber-hi);
+    font-family:var(--font-mono); font-weight:700; font-size:17px; padding:8px 0;
+    -moz-appearance:textfield;
+  }
+  #profileTemp::-webkit-outer-spin-button, #profileTemp::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .temp-unit{color:var(--text-mid); font-size:13px; padding-right:10px; font-family:var(--font-mono);}
+  .temp-default{font-size:11.5px; color:var(--text-dim);}
+
+  .profile-steps{display:flex; flex-direction:column; gap:8px; margin-top:14px;}
+  .profile-step-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--char-700); border:1px solid var(--line-soft);
+    border-radius:var(--radius-sm); padding:10px 12px;
+    box-shadow:var(--well-inset);
+  }
+  .profile-step-row .ps-label{font-size:13.5px; color:var(--text-hi); font-weight:500;}
+  .profile-step-row .ps-body{display:flex; flex-direction:column; gap:3px; min-width:0; flex:1;}
+  .profile-step-row .ps-probe{
+    display:flex; align-items:center; gap:5px;
+    font-size:11px; color:var(--text-dim); line-height:1.3;
+  }
+  .profile-step-row .ps-probe svg{width:11px; height:11px; flex:none; color:var(--amber-hi);}
+  .profile-step-row .ps-meta{display:flex; align-items:center; gap:10px; flex:none;}
+  .profile-step-row .ps-time{
+    font-family:var(--font-mono); font-weight:700; color:var(--amber-hi); font-size:13.5px;
+    min-width:56px; text-align:right;
+  }
+  .ps-add{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card));
+    color:var(--text-hi); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex:none;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+    transition:border-color .15s ease, color .15s ease, transform .12s ease;
+  }
+  .ps-add:hover{border-color:var(--amber); color:var(--amber-hi);}
+  .ps-add:active{transform:scale(0.92); box-shadow:var(--well-inset);}
+  .ps-add svg{width:14px;height:14px;}
+
+  .profile-actions{margin-top:16px;}
+  .profile-actions .btn{width:100%; justify-content:center; padding:13px;}
+
+  /* ---------- Custom timer form ---------- */
+  .custom-card{
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:18px;
+    box-shadow:var(--lift-md), var(--edge-hi);
+  }
+  .custom-form{
+    display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim);
+  }
+  .field input[type=text]{
+    background:var(--char-700); border:1px solid var(--line);
+    border-radius:var(--radius-sm); color:var(--text-hi);
+    padding:11px 12px; font-size:14px; min-width:200px;
+    min-height:44px;
+    box-shadow:var(--well-inset);
+  }
+  .field input[type=text]:focus{border-color:var(--amber);}
+  .field.grow{flex:1 1 220px;}
+
+  .form-actions{display:flex; gap:8px; align-items:flex-end;}
+  .btn.star-btn{
+    width:44px; height:44px; padding:0; justify-content:center;
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card)); border:1px solid var(--line); flex:none;
+  }
+  .btn.star-btn svg{width:18px;height:18px; stroke:var(--amber-hi); fill:none; transition:fill .15s ease;}
+  .btn.star-btn.saved svg{fill:var(--amber-hi);}
+  .save-feedback{
+    font-size:11.5px; color:var(--amber-hi); margin-left:6px; opacity:0; transition:opacity .2s ease;
+    align-self:center; white-space:nowrap;
+  }
+  .save-feedback.show{opacity:1;}
+
+  .hms{display:flex; gap:8px;}
+  .hms .hms-field{display:flex; flex-direction:column; gap:6px; align-items:center;}
+  .hms input[type=number]{
+    width:64px; text-align:center;
+    background:var(--char-700); border:1px solid var(--line);
+    border-radius:var(--radius-sm); color:var(--text-hi);
+    padding:11px 6px; font-size:16px; font-family:var(--font-mono); font-weight:700;
+    min-height:44px;
+    -moz-appearance:textfield;
+    box-shadow:var(--well-inset);
+  }
+  .hms input[type=number]::-webkit-outer-spin-button,
+  .hms input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .hms input:focus{border-color:var(--amber);}
+  .hms .hms-field span{font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase;}
+
+  /* ---------- Cook session indicators (elapsed time since a cook's first stage started) ---------- */
+  .cook-sessions{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  .cook-session-chip{
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line); border-radius:999px;
+    padding:7px 16px 7px 7px;
+    box-shadow:var(--lift-sm), var(--edge-hi);
+  }
+  .cook-session-chip .csc-icon{
+    width:28px; height:28px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(from 220deg, var(--ember), var(--amber) 45%, var(--coral) 100%);
+    box-shadow:inset 0 1px 1px rgba(255,220,180,0.5), inset 0 -2px 3px rgba(120,30,0,0.4);
+  }
+  .cook-session-chip .csc-icon svg{ width:14px; height:14px; }
+  .cook-session-chip .csc-text{ display:flex; flex-direction:column; gap:1px; }
+  .cook-session-chip .csc-name{
+    font-family:var(--font-display); font-weight:600; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.03em; color:var(--text-hi);
+  }
+  .cook-session-chip .csc-elapsed{
+    font-family:var(--font-mono); font-size:12.5px; color:var(--amber-hi); font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .cook-session-chip .csc-actions{display:flex;gap:4px;margin-left:4px;}
+  .cook-session-chip .csc-action{
+    border:1px solid var(--line);background:transparent;color:var(--text-mid);
+    border-radius:999px;padding:6px 8px;font-size:10px;font-weight:700;cursor:pointer;
+  }
+  .cook-session-chip .csc-action:hover{border-color:var(--amber);color:var(--amber-hi);}
+  .cook-session-chip .csc-action.cancel:hover{border-color:var(--coral);color:var(--coral-hi);}
+
+  /* ---------- Timer grid ---------- */
+  .timer-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:16px;
+  }
+
+  .empty-state{
+    border:1px dashed var(--line);
+    border-radius:var(--radius-lg);
+    padding:36px 20px;
+    text-align:center;
+    color:var(--text-dim);
+  }
+  .empty-state svg{width:34px;height:34px; margin-bottom:10px; stroke:var(--gray-muted);}
+  .empty-state p{margin:0; font-size:13px; max-width:320px; margin:0 auto;}
+
+  .card{
+    background:linear-gradient(165deg, var(--slate-card-2) 0%, var(--slate-card) 55%);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:18px;
+    box-shadow:var(--lift-md), var(--edge-hi);
+    position:relative;
+    display:flex; flex-direction:column; gap:14px;
+    transition:border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+  }
+  .card[data-status="active"]{
+    border-color:rgba(255,140,36,0.4);
+    box-shadow:var(--lift-md), var(--edge-hi), 0 0 0 1px rgba(255,140,36,0.08);
+  }
+  .card[data-status="paused"]{border-color:var(--line); opacity:0.88;}
+  .card[data-status="done"]{
+    border-color:var(--coral);
+    box-shadow:var(--lift-lg), var(--edge-hi), 0 0 0 1px rgba(255,90,78,0.4), 0 0 24px -6px rgba(255,90,78,0.55);
+    animation:cardPulse 1.1s ease-in-out infinite;
+  }
+  .card[data-status="finished"]{border-color:var(--line-soft); opacity:0.55; box-shadow:var(--lift-sm);}
+
+  @keyframes cardPulse{
+    0%,100%{box-shadow:var(--lift-lg), var(--edge-hi), 0 0 0 1px rgba(255,90,78,0.35), 0 0 18px -6px rgba(255,90,78,0.4);}
+    50%{box-shadow:var(--lift-lg), var(--edge-hi), 0 0 0 1px rgba(255,90,78,0.7), 0 0 34px -4px rgba(255,90,78,0.85);}
+  }
+
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .card-label{
+    font-family:var(--font-display); font-weight:600; font-size:15.5px;
+    letter-spacing:0.01em; line-height:1.25;
+    text-transform:uppercase; color:var(--text-hi);
+    word-break:break-word;
+  }
+  .status-chip{
+    font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+    padding:4px 8px; border-radius:999px; flex:none;
+    font-weight:700;
+  }
+  .status-chip.active{background:rgba(255,140,36,0.15); color:var(--amber-hi);}
+  .status-chip.paused{background:rgba(140,124,103,0.18); color:var(--text-mid);}
+  .status-chip.done{background:rgba(255,90,78,0.2); color:var(--coral-hi);}
+  .status-chip.finished{background:rgba(140,124,103,0.12); color:var(--text-dim);}
+
+  .card-delete{
+    position:absolute; top:10px; right:10px;
+    width:26px;height:26px; border-radius:50%;
+    border:none; background:transparent; color:var(--text-dim);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s ease, color .15s ease, background .15s ease;
+  }
+  .card:hover .card-delete, .card:focus-within .card-delete{opacity:1;}
+  .card-delete:hover{color:var(--coral-hi); background:rgba(255,90,78,0.12);}
+  .card-delete svg{width:14px;height:14px;}
+
+  .ring-wrap{display:flex; align-items:center; justify-content:center; position:relative;}
+  .ring-wrap::before{
+    content:'';
+    position:absolute; inset:8%;
+    border-radius:50%;
+    background:radial-gradient(circle at 42% 38%, rgba(255,241,222,0.05), transparent 55%),
+               radial-gradient(circle at 50% 55%, var(--char-800), var(--char-900) 78%);
+    box-shadow: inset 0 3px 8px rgba(0,0,0,0.65), inset 0 -1px 0 rgba(255,241,222,0.04);
+    z-index:0;
+  }
+  .ring-wrap svg{width:100%; max-width:190px; height:auto; display:block; position:relative; z-index:1;}
+  .ring-track{fill:none; stroke:var(--ring-track); stroke-width:9;}
+  .ring-progress{
+    fill:none; stroke-width:9; stroke-linecap:round;
+    transform:rotate(-90deg); transform-origin:50% 50%;
+    transition:stroke-dashoffset 0.3s linear, stroke .3s ease;
+    filter:drop-shadow(0 0 5px currentColor);
+  }
+  .ring-progress.active{stroke:var(--amber); color:rgba(255,140,36,0.55);}
+  .ring-progress.paused{stroke:var(--gray-muted); color:transparent; filter:none;}
+  .ring-progress.done{stroke:var(--coral); color:rgba(255,90,78,0.75);}
+  .ring-progress.finished{stroke:var(--gray-muted); color:transparent; filter:none;}
+  .ring-tick{stroke:var(--char-900); stroke-width:2; opacity:0.5;}
+
+  .ring-center{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; pointer-events:none; z-index:2;
+  }
+  .ring-center .time{
+    font-family:var(--font-mono); font-weight:700;
+    font-size:clamp(22px, 6vw, 30px);
+    color:var(--text-hi); letter-spacing:0.01em;
+    font-variant-numeric:tabular-nums;
+    text-shadow:0 2px 3px rgba(0,0,0,0.5);
+  }
+  .card[data-status="done"] .ring-center .time{color:var(--coral-hi);}
+  .ring-center .sub{
+    margin-top:2px; font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--text-dim);
+  }
+
+  .card-controls{display:flex; gap:8px; flex-wrap:wrap;}
+  .card-controls .btn{flex:1; justify-content:center; padding:11px 10px; font-size:12.5px;}
+
+  .alarm-controls{display:flex; gap:8px;}
+  .alarm-controls .btn{flex:1; justify-content:center;}
+  .btn.snooze{background:var(--slate-card-2); border-color:var(--line);}
+  .btn.dismiss{
+    background:linear-gradient(180deg, var(--coral-hi), var(--coral));
+    color:#2A0906; border-color:transparent; font-weight:700;
+  }
+
+  /* ---------- Notes drawer ---------- */
+  .drawer-toggle-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    display:flex; justify-content:center;
+    /* Keeps the pill tappable above the iPhone home-indicator gesture area
+       instead of sitting flush under it. */
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .drawer-toggle{
+    background:linear-gradient(180deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:14px 14px 0 0;
+    padding:12px 22px;
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; color:var(--text-hi);
+    font-size:13px; font-weight:600; letter-spacing:0.03em;
+    box-shadow:0 -6px 20px -10px rgba(0,0,0,0.6);
+  }
+  .drawer-toggle svg{width:16px;height:16px; transition:transform .2s ease;}
+  .drawer-toggle.open svg{transform:rotate(180deg);}
+  .drawer-toggle .badge{
+    background:var(--amber); color:#241304; font-size:10px; font-weight:700;
+    padding:2px 6px; border-radius:999px;
+  }
+
+  .notes-drawer{
+    position:fixed; left:0; right:0; bottom:0; z-index:49;
+    background:linear-gradient(165deg, var(--char-700), var(--char-800));
+    border-top:1px solid var(--line);
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,0.8), var(--edge-hi);
+    transform:translateY(100%);
+    transition:transform .28s cubic-bezier(.2,.9,.3,1);
+    max-height:72vh;
+    display:flex; flex-direction:column;
+  }
+  .notes-drawer.open{transform:translateY(0);}
+  .notes-inner{
+    padding:16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    max-width:1080px; margin:0 auto; width:100%;
+    display:flex; flex-direction:column; gap:12px;
+    overflow:auto;
+  }
+  .notes-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .notes-head h3{
+    font-family:var(--font-display); font-size:14px; letter-spacing:0.1em;
+    text-transform:uppercase; margin:0; color:var(--text-hi);
+  }
+  .notes-actions{display:flex; gap:8px;}
+  textarea#cook-log{
+    width:100%; min-height:180px; resize:vertical;
+    background:var(--char-700); border:1px solid var(--line);
+    border-radius:var(--radius-md); color:var(--text-hi);
+    padding:12px 14px; font-size:14px; line-height:1.55;
+    font-family:var(--font-mono);
+    box-shadow:var(--well-inset);
+  }
+  textarea#cook-log:focus{border-color:var(--amber);}
+  .notes-hint{font-size:11.5px; color:var(--text-dim);}
+  .copy-feedback{
+    font-size:12px; color:var(--amber-hi); opacity:0; transition:opacity .2s ease;
+  }
+  .copy-feedback.show{opacity:1;}
+
+  /* ---------- Cook-first dashboard ---------- */
+  .cook-mode{
+    display:none; margin:20px 0 28px; padding:18px;
+    background:linear-gradient(145deg, rgba(255,140,36,0.14), var(--slate-card) 42%, var(--char-800));
+    border:1px solid rgba(255,140,36,0.45); border-radius:var(--radius-lg);
+    box-shadow:var(--lift-lg), var(--edge-hi), 0 0 28px -16px rgba(255,140,36,0.65);
+  }
+  .cook-mode.visible{display:block;}
+  .cook-mode-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .cook-mode-kicker{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber-hi);font-weight:700;}
+  .cook-mode-title{font-family:var(--font-display);font-size:24px;text-transform:uppercase;margin:3px 0 0;}
+  .cook-mode-sub{font-size:12px;color:var(--text-mid);margin-top:4px;}
+  .cook-mode-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;}
+  .cook-focus,.cook-up-next{background:rgba(18,14,10,.72);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px;box-shadow:var(--well-inset);}
+  .cook-focus-label,.cook-up-next-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
+  .cook-focus-stage{font-family:var(--font-display);font-size:19px;text-transform:uppercase;margin-top:6px;}
+  .cook-focus-time{font-family:var(--font-mono);font-size:clamp(30px,8vw,52px);font-weight:700;color:var(--amber-hi);line-height:1.1;margin:8px 0 4px;}
+  .cook-focus-eta{font-size:12px;color:var(--text-mid);}
+  .cook-mode-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .cook-up-next-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .next-stage-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:12px;color:var(--text-mid);}
+  .next-stage-row:last-child{border-bottom:none;}
+  .next-stage-row.current{color:var(--amber-hi);font-weight:700;}
+  .setup-sections.has-active{opacity:.82;}
+  .timer-eta{font-size:11.5px;color:var(--text-mid);text-align:center;margin-top:-8px;}
+  .estimate-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);margin-left:7px;}
+  .safety-note{margin-top:12px;padding:11px 13px;border-left:3px solid var(--amber);background:rgba(255,140,36,.07);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:11.5px;line-height:1.5;color:var(--text-mid);}
+  .safety-note strong{color:var(--amber-hi);}
+  .profile-weight{display:flex;align-items:center;gap:6px;}
+  #profileWeight{width:64px;background:var(--char-800);border:1px solid var(--line);border-radius:999px;color:var(--amber-hi);padding:9px 7px;text-align:center;font-family:var(--font-mono);font-weight:700;}
+  .weight-unit{font-size:12px;color:var(--text-mid);}
+  .history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+  .history-card{background:linear-gradient(165deg,var(--slate-card-2),var(--slate-card));border:1px solid var(--line);border-radius:var(--radius-md);padding:13px;box-shadow:var(--lift-sm),var(--edge-hi);}
+  .history-name{font-family:var(--font-display);text-transform:uppercase;font-size:15px;}
+  .history-meta{font-size:11px;color:var(--text-dim);line-height:1.5;margin:5px 0 10px;}
+  .toast{position:fixed;left:50%;bottom:82px;z-index:80;transform:translate(-50%,18px);background:#F6EFE4;color:#241304;border-radius:999px;padding:10px 14px;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:700;opacity:0;pointer-events:none;transition:.2s ease;box-shadow:var(--lift-lg);}
+  .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
+  .toast button{border:none;background:transparent;color:#8A3C00;font-weight:800;cursor:pointer;padding:4px;}
+  .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+
+  /* ---------- In-app confirm dialog (replaces native confirm(), which some
+     embedded/sandboxed views block or silently no-op) ---------- */
+  .confirm-overlay{
+    position:fixed; inset:0; z-index:90;
+    background:rgba(10,7,4,0.72);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; pointer-events:none; transition:opacity .15s ease;
+  }
+  .confirm-overlay.show{opacity:1; pointer-events:auto;}
+  .confirm-box{
+    width:100%; max-width:360px;
+    background:linear-gradient(165deg, var(--slate-card-2), var(--slate-card));
+    border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--lift-lg), var(--edge-hi);
+    padding:20px; transform:translateY(10px) scale(0.98); transition:transform .15s ease;
+  }
+  .confirm-overlay.show .confirm-box{transform:translateY(0) scale(1);}
+  .confirm-message{font-size:14px; color:var(--text-hi); line-height:1.5; margin:0 0 18px;}
+  .confirm-actions{display:flex; gap:10px; justify-content:flex-end;}
+
+  @media (min-width: 720px){
+    .notes-drawer{
+      left:auto; right:0; top:0; bottom:0; width:min(420px, 92vw);
+      max-height:none; border-top:none; border-left:1px solid var(--line);
+      transform:translateX(100%);
+      box-shadow:-20px 0 50px -20px rgba(0,0,0,0.8);
+    }
+    .notes-drawer.open{transform:translateX(0);}
+    .notes-inner{height:100%; padding-top:74px;}
+    .drawer-toggle-bar{left:auto; right:24px; bottom:24px;}
+    .drawer-toggle{border-radius:999px; border:1px solid var(--line);}
+  }
+
+  footer.foot{
+    text-align:center; padding:26px 18px 10px; color:var(--text-dim); font-size:11.5px;
+    letter-spacing:0.04em;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card[data-status="done"]{animation:none;}
+    .ring-progress{transition:none;}
+    .notes-drawer{transition:none;}
+    .brand-text h1{animation:none;}
+    .sparkle{animation:none; opacity:0.7;}
+  }
+
+  @media (max-width: 480px){
+    .brand-text h1{font-size:16.5px;}
+    .brand-text p{display:none;}
+    .sound-toggle .lbl, .toggle-pill .lbl{display:none;}
+    .toggle-pill, .sound-toggle{padding:6px;}
+    .custom-form{flex-direction:column; align-items:stretch;}
+    .hms{justify-content:center;}
+    .cook-mode{padding:14px;margin-top:14px;}
+    .cook-mode-grid{grid-template-columns:1fr;}
+    .cook-mode-title{font-size:20px;}
+    .card-delete{opacity:1;background:rgba(18,14,10,.7);}
+    .global-controls .btn{padding:9px 10px;font-size:11.5px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="hero-flames" aria-hidden="true">
+    <svg class="f1" viewBox="0 0 24 24"><path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/><path class="fr-mid" fill="url(#flameGradHot)" transform="translate(3.4,5) scale(0.58)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/></svg>
+    <svg class="f2" viewBox="0 0 24 24"><path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/></svg>
+    <svg class="f3" viewBox="0 0 24 24"><path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/><path class="fr-mid" fill="url(#flameGradHot)" transform="translate(3.4,5) scale(0.58)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/></svg>
+    <svg class="f4" viewBox="0 0 24 24"><path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/></svg>
+    <svg width="0" height="0" style="position:absolute;">
+      <defs>
+        <linearGradient id="flameGradWarm" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#FF5A00"/>
+          <stop offset="55%" stop-color="#FF8C24"/>
+          <stop offset="100%" stop-color="#FFD37A"/>
+        </linearGradient>
+        <linearGradient id="flameGradHot" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#FFB35C"/>
+          <stop offset="60%" stop-color="#FFD37A"/>
+          <stop offset="100%" stop-color="#FFF3D6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <div class="top-inner">
+    <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="Return to home screen">
+      <div class="brand-mark">
+        <svg class="flame-icon flame-real glow" viewBox="0 0 24 24" aria-hidden="true">
+          <path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/>
+          <path class="fr-mid" fill="url(#flameGradHot)" transform="translate(3.4,5) scale(0.58)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/>
+          <path class="fr-core" fill="#FFEFD2" transform="translate(6.2,10.5) scale(0.3)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>BBQ Pit-Master<span class="sparkle sparkle-1" aria-hidden="true">✦</span><span class="sparkle sparkle-2" aria-hidden="true">✧</span></h1>
+        <p>Cook clock &amp; smoker log</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="unit-toggle" id="unitToggle" title="Switch temperature units">
+        <button class="unit-btn" data-unit="F" type="button" aria-pressed="true">°F</button>
+        <button class="unit-btn" data-unit="C" type="button" aria-pressed="false">°C</button>
+      </div>
+      <button class="toggle-pill" id="notifyToggle" type="button" aria-pressed="false" title="Get a system notification when a timer finishes">
+        <span class="dot">
+          <svg id="notifyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </span>
+        <span class="lbl">Alerts Off</span>
+      </button>
+      <button class="toggle-pill" id="voiceToggle" type="button" aria-pressed="false" title="Announce timer names out loud when they finish">
+        <span class="dot">
+          <svg id="voiceIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9v6h4l5 4V5L8 9H4z"></path>
+          </svg>
+        </span>
+        <span class="lbl">Voice Off</span>
+      </button>
+      <button class="toggle-pill on" id="soundToggle" type="button" aria-pressed="true">
+        <span class="dot">
+          <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+        </span>
+        <span class="lbl">Sound On</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="cook-mode" id="cookMode" aria-live="polite">
+    <div class="cook-mode-head">
+      <div>
+        <div class="cook-mode-kicker">Cook mode</div>
+        <h2 class="cook-mode-title" id="cookModeTitle">Active cook</h2>
+        <div class="cook-mode-sub" id="cookModeSub"></div>
+      </div>
+      <button class="btn ghost" id="scrollToTimersBtn" type="button">View all timers</button>
+    </div>
+    <div class="cook-mode-grid">
+      <div class="cook-focus">
+        <div class="cook-focus-label">Right now</div>
+        <div class="cook-focus-stage" id="cookFocusStage">—</div>
+        <div class="cook-focus-time" id="cookFocusTime">00:00</div>
+        <div class="cook-focus-eta" id="cookFocusEta"></div>
+        <div class="cook-mode-actions" id="cookModeActions"></div>
+      </div>
+      <div class="cook-up-next">
+        <div class="cook-up-next-label">Cook plan</div>
+        <div class="cook-up-next-list" id="cookUpNext"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="setup-sections" id="setupSections">
+
+  <section>
+    <div class="section-head"><h2>Meat &amp; Temp Profiles</h2></div>
+    <div class="meat-grid" id="meatGrid"></div>
+
+    <div class="profile-panel" id="profilePanel" hidden>
+      <div class="profile-head">
+        <div>
+          <div class="profile-name" id="profileName">—</div>
+          <div class="profile-hint" id="profileHint">Steps below scale automatically with your smoker temp.</div>
+        </div>
+        <button class="profile-close" id="profileClose" type="button" aria-label="Close profile" title="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="style-toggle-row" id="styleToggleRow"></div>
+      <div class="style-blurb" id="styleBlurb"></div>
+
+      <div class="profile-temp-row">
+        <label for="profileTemp">Smoker Temp</label>
+        <div class="temp-input-wrap">
+          <button class="temp-step" id="tempDown" type="button" aria-label="Decrease temperature">&minus;</button>
+          <input type="number" id="profileTemp" inputmode="numeric">
+          <span class="temp-unit" id="tempUnitLabel">°F</span>
+          <button class="temp-step" id="tempUp" type="button" aria-label="Increase temperature">&plus;</button>
+        </div>
+        <span class="temp-default" id="tempDefaultNote"></span>
+        <label for="profileWeight">Approx. Weight</label>
+        <div class="profile-weight">
+          <input type="number" id="profileWeight" min="0.5" max="40" step="0.5" inputmode="decimal" aria-describedby="weightHint">
+          <span class="weight-unit">lb</span>
+        </div>
+      </div>
+
+      <div class="safety-note" id="weightHint"><strong>Thermometer first:</strong> stage times are planning estimates, not doneness guarantees. Weight gently adjusts the plan, but always verify internal temperature and tenderness with a reliable probe. For the most dependable browser alarms, leave this page open and enable Alerts.</div>
+
+      <div class="total-cook-time" id="totalCookTime">
+        <span class="tct-label">Total Cook Time</span>
+        <span class="tct-value" id="totalCookTimeValue">—</span>
+      </div>
+
+      <div class="steps-hint" id="stepsHint">Tap a stage’s flame to include or skip it — lit &amp; highlighted means it’s in this cook; dim means it’s skipped.</div>
+      <div class="profile-steps" id="profileSteps"></div>
+
+      <div class="profile-actions">
+        <button class="btn primary" id="addAllStepsBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span id="addAllStepsLabel">Add All Steps as Timers</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="favoritesSection" hidden>
+    <div class="section-head"><h2>Your Saved Timers</h2></div>
+    <div class="favorite-grid" id="favoriteGrid"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Quick Add Presets</h2></div>
+    <div class="preset-grid" id="presetGrid"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Custom Timer</h2></div>
+    <div class="custom-card">
+      <div class="custom-form">
+        <div class="field grow">
+          <label for="customLabel">Label</label>
+          <input type="text" id="customLabel" placeholder="e.g. Brisket - Flat" maxlength="60">
+        </div>
+        <div class="field">
+          <label>Duration</label>
+          <div class="hms">
+            <div class="hms-field">
+              <input type="number" id="hrsInput" min="0" max="23" value="0" inputmode="numeric">
+              <span>Hrs</span>
+            </div>
+            <div class="hms-field">
+              <input type="number" id="minsInput" min="0" max="59" value="30" inputmode="numeric">
+              <span>Min</span>
+            </div>
+            <div class="hms-field">
+              <input type="number" id="secsInput" min="0" max="59" value="0" inputmode="numeric">
+              <span>Sec</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <div class="form-actions">
+            <button class="btn star-btn" id="saveFavoriteBtn" type="button" title="Save this as a favorite timer for quick reuse" aria-label="Save as favorite">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button class="btn primary" id="addCustomBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Start Timer
+            </button>
+          </div>
+          <span class="save-feedback" id="saveFeedback">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <section id="activeCooksSection">
+    <div class="section-head">
+      <h2><svg class="head-icon flame-icon flame-real" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:2px;"><path class="fr-outer" fill="url(#flameGradWarm)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/><path class="fr-mid" fill="url(#flameGradHot)" transform="translate(3.4,5) scale(0.58)" d="M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z"/></svg>Active Cooks <span class="count" id="timerCount"></span></h2>
+      <div class="global-controls">
+        <button class="btn ghost" id="pauseAllBtn" type="button">Pause All</button>
+        <button class="btn ghost" id="resumeAllBtn" type="button">Resume All</button>
+        <button class="btn danger-outline" id="clearFinishedBtn" type="button">Clear Finished</button>
+      </div>
+    </div>
+    <div class="cook-sessions" id="cookSessions" hidden></div>
+    <div class="timer-grid" id="timerGrid"></div>
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+      <p>No timers running yet. Pick a preset above or set a custom timer to start tracking your cook.</p>
+    </div>
+  </section>
+
+  <section id="historySection" hidden>
+    <div class="section-head">
+      <h2>Recent Cooks</h2>
+      <button class="btn ghost" id="clearHistoryBtn" type="button">Clear history</button>
+    </div>
+    <div class="history-grid" id="historyGrid"></div>
+  </section>
+
+</main>
+
+<footer class="foot">Keep the lid closed &amp; the smoke thin. Timers persist even if you refresh this page.</footer>
+
+<div class="drawer-toggle-bar">
+  <button class="drawer-toggle" id="drawerToggle" type="button" aria-expanded="false">
+    <span>Cook Log &amp; Notes</span>
+    <span class="badge" id="notesBadge" style="display:none;">•</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+</div>
+
+<div class="notes-drawer" id="notesDrawer">
+  <div class="notes-inner">
+    <div class="notes-head">
+      <h3>Cook Log</h3>
+      <div class="notes-actions">
+        <button class="btn ghost" id="timestampBtn" type="button">+ Timestamp</button>
+        <button class="btn primary" id="copyLogBtn" type="button">Copy Log</button>
+      </div>
+    </div>
+    <textarea id="cook-log" placeholder="12:00 PM — Smoker steady at 225°F, added a hickory log&#10;1:15 PM — Wrapped the brisket in butcher paper..."></textarea>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <span class="notes-hint">Saved automatically to this device.</span>
+      <span class="copy-feedback" id="copyFeedback">Copied to clipboard ✓</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="undoToast" role="status" aria-live="polite">
+  <span id="undoMessage">Timer deleted</span>
+  <button id="undoBtn" type="button">Undo</button>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay" role="alertdialog" aria-modal="true" aria-describedby="confirmMessage">
+  <div class="confirm-box">
+    <p class="confirm-message" id="confirmMessage">Are you sure?</p>
+    <div class="confirm-actions">
+      <button class="btn ghost" id="confirmCancelBtn" type="button">Cancel</button>
+      <button class="btn danger-outline" id="confirmOkBtn" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="presetEditOverlay" role="dialog" aria-modal="true" aria-labelledby="presetEditTitle">
+  <div class="confirm-box preset-edit-box">
+    <p class="confirm-message" id="presetEditTitle">Customize Preset</p>
+    <div class="preset-edit-field">
+      <label for="presetEditLabel">Name</label>
+      <input type="text" id="presetEditLabel" maxlength="40">
+    </div>
+    <div class="preset-edit-field">
+      <label>Time</label>
+      <div class="preset-edit-time">
+        <div>
+          <label for="presetEditHours">Hours</label>
+          <input type="number" id="presetEditHours" min="0" max="24" step="1" inputmode="numeric">
+        </div>
+        <div>
+          <label for="presetEditMinutes">Minutes</label>
+          <input type="number" id="presetEditMinutes" min="0" max="59" step="1" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="preset-edit-error" id="presetEditError" hidden></div>
+    <div class="preset-edit-actions">
+      <button class="btn ghost" id="presetEditResetBtn" type="button">Reset to Default</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn ghost" id="presetEditCancelBtn" type="button">Cancel</button>
+        <button class="btn primary" id="presetEditSaveBtn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="stepEditOverlay" role="dialog" aria-modal="true" aria-labelledby="stepEditTitle">
+  <div class="confirm-box preset-edit-box">
+    <p class="confirm-message" id="stepEditTitle">Customize Stage Time</p>
+    <p class="preset-edit-sub" id="stepEditSub"></p>
+    <div class="preset-edit-field">
+      <label>Time</label>
+      <div class="preset-edit-time">
+        <div>
+          <label for="stepEditHours">Hours</label>
+          <input type="number" id="stepEditHours" min="0" max="24" step="1" inputmode="numeric">
+        </div>
+        <div>
+          <label for="stepEditMinutes">Minutes</label>
+          <input type="number" id="stepEditMinutes" min="0" max="59" step="1" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="preset-edit-error" id="stepEditError" hidden></div>
+    <div class="preset-edit-actions">
+      <button class="btn ghost" id="stepEditResetBtn" type="button">Reset to Default</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn ghost" id="stepEditCancelBtn" type="button">Cancel</button>
+        <button class="btn primary" id="stepEditSaveBtn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Storage keys ---------------- */
+  const LS_TIMERS = "pitmaster_timers_v1";
+  const LS_NOTES  = "pitmaster_notes_v1";
+  const LS_SOUND  = "pitmaster_sound_v1";
+  const LS_VOICE  = "pitmaster_voice_v1";
+  const LS_NOTIFY = "pitmaster_notify_v1";
+  const LS_FAVORITES = "pitmaster_favorites_v1";
+  const LS_TEMPUNIT = "pitmaster_tempunit_v1";
+  const LS_GUIDED = "pitmaster_guided_cooks_v2";
+  const LS_HISTORY = "pitmaster_cook_history_v2";
+  const LS_PRESETS = "pitmaster_presets_v1";
+  const LS_STEP_OVERRIDES = "pitmaster_step_overrides_v1";
+
+  /* ---------------- State ---------------- */
+  let timers = loadTimers();       // array of timer objects
+  let soundOn = loadSound();
+  let voiceOn = loadFlag(LS_VOICE, false);
+  let notifyOn = loadFlag(LS_NOTIFY, false);
+  let favorites = loadFavorites();
+  let guidedCooks = loadJson(LS_GUIDED, []);
+  let cookHistory = loadJson(LS_HISTORY, []);
+  // Per-profile, per-stage, per-style user time overrides, e.g.
+  // { brisket: { 0: { lowSlow: 200 } } } - only customized values are stored;
+  // anything absent falls back to the profile's built-in default minutes.
+  let stepTimeOverrides = loadJson(LS_STEP_OVERRIDES, {});
+  let deletedTimerSnapshot = null;
+  let undoTimeout = null;
+  let tempUnit = loadTempUnit();   // 'F' or 'C' - display only, all internal math stays in Fahrenheit
+  let audioCtx = null;
+  let wakeLockRef = null;
+  const alarmIntervals = {};       // id -> interval id for repeating beep
+  const ORIGINAL_TITLE = document.title;
+
+  const ICONS = {
+    spritz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h6l-1 4h3l-7 9 2-6H6l3-7z"/><circle cx="18" cy="6" r="1.4"/><circle cx="20" cy="10" r="1"/><circle cx="16.5" cy="10" r="0.8"/></svg>',
+    probe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/></svg>',
+    wrap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M3 12h18"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    rest: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>',
+    flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.1v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.9v2a4 4 0 0 1-4 4H3"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  };
+
+  const MEAT_ICONS = {
+    brisket: `<svg viewBox="0 0 48 48">
+      <defs>
+        <linearGradient id="gBrisket" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#8A4A26"/>
+          <stop offset="45%" stop-color="#B9612E"/>
+          <stop offset="100%" stop-color="#6E3A1E"/>
+        </linearGradient>
+      </defs>
+      <path d="M6 30c0-10 8-19 20-19s16 8 16 14-6 12-15 12c-3.5 0-5-1.5-8-1.5-6 0-9 4-13 3-3-.8-2-5.5 0-8.5z" fill="url(#gBrisket)" stroke="#4A2612" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M12 20c3 3 4 7 3 12" stroke="#3D2010" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <path d="M19 16c3 3 4 8 3 14" stroke="#3D2010" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M27 14.5c2.5 3.5 3 9 1.5 15" stroke="#3D2010" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.45"/>
+      <ellipse cx="16" cy="17" rx="7" ry="3.2" fill="#FFD9A8" opacity="0.28" transform="rotate(-18 16 17)"/>
+    </svg>`,
+    ribs: `<svg viewBox="0 0 48 48">
+      <defs>
+        <linearGradient id="gRibs" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#9A4E28"/>
+          <stop offset="100%" stop-color="#6B3018"/>
+        </linearGradient>
+      </defs>
+      <path d="M6 8c8 1 10 8 10 16s-3 14-9 20c8-3 10-11 10-19s-2-14-9-17z" fill="url(#gRibs)" stroke="#43220f" stroke-width="1.2"/>
+      <path d="M13 10c5 2.5 5 21 0 28" stroke="#F3E3CE" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.92"/>
+      <path d="M18 9c5 3 5 22 1 29" stroke="#F3E3CE" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M23 8c5 3.5 5 23 1.5 30" stroke="#F3E3CE" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.68"/>
+      <path d="M28.5 8c5 4 4.5 24 1 30.5" stroke="#F3E3CE" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <path d="M13 10c5 2.5 5 21 0 28" stroke="#B9612E" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M18 9c5 3 5 22 1 29" stroke="#B9612E" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.42"/>
+    </svg>`,
+    porkbutt: `<svg viewBox="0 0 48 48">
+      <defs>
+        <radialGradient id="gPork" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#C97840"/>
+          <stop offset="55%" stop-color="#93502A"/>
+          <stop offset="100%" stop-color="#5E3016"/>
+        </radialGradient>
+      </defs>
+      <path d="M24 6c9 0 15 6 15 14 0 6-3 10-3 15 0 3-2 5-4 5s-3-2-3-4c0-1-1-2-2-2s-2 1-2 2c0 2-1 4-3 4s-3-2-3-4c0-1-.7-2-1.8-2-1.6 0-2.2 1.7-4 1.7-2.4 0-4.2-2-4.2-5 0-3.5 2-5 2-9C9 12 15 6 24 6z" fill="url(#gPork)" stroke="#3E2010" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M17 16c2 2 2 6 1 10" stroke="#3E2010" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.45"/>
+      <path d="M27 15c2.5 2.5 2.5 8 1 12" stroke="#3E2010" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.4"/>
+      <ellipse cx="19" cy="14" rx="6.5" ry="3" fill="#FFD9A8" opacity="0.3" transform="rotate(-15 19 14)"/>
+    </svg>`,
+    chicken: `<svg viewBox="0 0 48 48">
+      <defs>
+        <radialGradient id="gChicken" cx="38%" cy="28%" r="80%">
+          <stop offset="0%" stop-color="#F3C168"/>
+          <stop offset="55%" stop-color="#D99A3B"/>
+          <stop offset="100%" stop-color="#A56A22"/>
+        </radialGradient>
+      </defs>
+      <path d="M20 10c-3-3-8-3-9 1-1 3 1 5 3 5-3 1-5 4-3 7 1 2 3 2 4 1" fill="url(#gChicken)" stroke="#6B4614" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M17 22c-5 2-8 8-6 15 1.5 5 6 7 11 7 6 0 12-4 13-11 1-6-2-11-6-14 2-1 4-3 4-6 0-4-3-7-7-6-2 .5-3 2-3 4" fill="url(#gChicken)" stroke="#6B4614" stroke-width="1.3" stroke-linejoin="round"/>
+      <circle cx="15" cy="14" r="1.1" fill="#3A2408"/>
+      <ellipse cx="21" cy="28" rx="7" ry="4" fill="#FFE9BE" opacity="0.35" transform="rotate(-20 21 28)"/>
+    </svg>`,
+    turkey: `<svg viewBox="0 0 48 48">
+      <defs>
+        <radialGradient id="gTurkey" cx="38%" cy="26%" r="82%">
+          <stop offset="0%" stop-color="#E8A855"/>
+          <stop offset="55%" stop-color="#B97A2E"/>
+          <stop offset="100%" stop-color="#7A4C18"/>
+        </radialGradient>
+      </defs>
+      <path d="M14 9c-2-3-6-3-7 0s1 5 3 5" fill="url(#gTurkey)" stroke="#5C3A10" stroke-width="1.2"/>
+      <path d="M18 8c-1-3.5-5-4.5-7-1.5s0 5.5 2.5 6" fill="url(#gTurkey)" stroke="#5C3A10" stroke-width="1.2"/>
+      <path d="M22 9c0-3.7-3.5-5.5-6-3s-1 6 1.5 6.5" fill="url(#gTurkey)" stroke="#5C3A10" stroke-width="1.2"/>
+      <path d="M19 20c-6 2-9 8-7 15 1.5 5.5 6.5 8 12 8 6.5 0 13-4.5 14-12 1-6.5-2.5-12-7-15 2-1.5 3.5-4 3-7-.7-4-5-6-8-3.5" fill="url(#gTurkey)" stroke="#5C3A10" stroke-width="1.3" stroke-linejoin="round"/>
+      <circle cx="17" cy="16" r="1.1" fill="#3A2408"/>
+      <ellipse cx="21" cy="27" rx="7.5" ry="4.2" fill="#FCE3B4" opacity="0.32" transform="rotate(-18 21 27)"/>
+    </svg>`,
+    salmon: `<svg viewBox="0 0 48 48">
+      <defs>
+        <linearGradient id="gSalmon" x1="0" y1="0" x2="1" y2="0.4">
+          <stop offset="0%" stop-color="#F4967C"/>
+          <stop offset="55%" stop-color="#E8703F"/>
+          <stop offset="100%" stop-color="#B84A26"/>
+        </linearGradient>
+      </defs>
+      <path d="M6 24c6-9 16-14 26-12 6 1.2 10 6 10 6s-4 4.8-10 6c-10 2-20-3-26-12z" fill="url(#gSalmon)" stroke="#7A2E14" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M42 18l4-5-1 7 1 7-4-5" fill="#B84A26" stroke="#7A2E14" stroke-width="1"/>
+      <path d="M14 20c2 1.5 2 5.5 0 7" stroke="#7A2E14" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M20 18c2.5 2 2.5 8 0 11" stroke="#7A2E14" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.45"/>
+      <path d="M26 17c3 2.5 3 10 0 13.5" stroke="#7A2E14" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.4"/>
+      <circle cx="12" cy="21" r="1" fill="#3A150A"/>
+      <ellipse cx="18" cy="16" rx="6" ry="2.6" fill="#FFE3D6" opacity="0.4" transform="rotate(-12 18 16)"/>
+    </svg>`,
+  };
+
+  // Small thermometer glyph used to flag internal meat-probe temperature guidance on a step.
+  const THERMO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>';
+
+  // Static, layered, semi-transparent flame glyph — reused everywhere a flame
+  // icon is needed (status chips, stage toggles, style buttons). No animation;
+  // the "realism" comes from three offset/scaled copies of the same silhouette
+  // at different opacities, referencing the shared gradients defined in <header>.
+  const FLAME_PATH = "M12.5 1.2c.9 2.9.2 4.7-1.4 6.6-1.9 2.2-2.7 3.9-2.7 5.9 0 1.1.3 2 .8 2.8-2.1-.8-3.6-2.8-3.6-5.3 0-1 .2-1.8.5-2.6C4.1 10.2 3 12.5 3 15.1 3 19.5 7 23 12 23s9-3.5 9-7.9c0-3-1.6-5.5-3.7-7.1.3 1.6-.2 2.8-1.2 3.7-.2-3.6-1.6-6.8-3.6-9.5z";
+  function flameGlyph(cls){
+    cls = cls || 'flame-real';
+    return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">
+      <path class="fr-outer" fill="url(#flameGradWarm)" d="${FLAME_PATH}"/>
+      <path class="fr-mid" fill="url(#flameGradHot)" transform="translate(3.4,5) scale(0.58)" d="${FLAME_PATH}"/>
+      <path class="fr-core" fill="#FFEFD2" transform="translate(6.2,10.5) scale(0.3)" d="${FLAME_PATH}"/>
+    </svg>`;
+  }
+  // A single solid, opaque, dark flame silhouette - used where the flame sits
+  // on top of a bright fill (e.g. a "selected" badge) and needs strong
+  // contrast rather than the usual semi-transparent layered look.
+  function flameGlyphSolid(cls, color){
+    cls = cls || 'flame-real-solid';
+    color = color || '#20110A';
+    return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path fill="${color}" d="${FLAME_PATH}"/></svg>`;
+  }
+
+  // Original/factory preset definitions - used as the fallback and as the
+  // "Reset to Default" target. The live, possibly-user-edited list lives in
+  // the mutable PRESETS array below and is persisted to localStorage.
+  const DEFAULT_PRESETS = [
+    { label: "Spritz / Baste", seconds: 30*60, icon:'spritz' },
+    { label: "Spritz / Baste", seconds: 45*60, icon:'spritz' },
+    { label: "Probe / Stall Check", seconds: 60*60, icon:'probe' },
+    { label: "Foil / Paper Wrap Reminder", seconds: 3*60*60, icon:'wrap' },
+    { label: "Flip / Turn Reminder", seconds: 15*60, icon:'flip' },
+    { label: "Rest Phase", seconds: 60*60, icon:'rest' },
+    { label: "Rest Phase", seconds: 2*60*60, icon:'rest' },
+  ];
+
+  function presetTag(seconds){
+    const h = Math.floor(seconds/3600);
+    const m = Math.round((seconds%3600)/60);
+    const parts = [];
+    if (h) parts.push(`${h} hr`);
+    if (m) parts.push(`${m} min`);
+    return parts.join(' ') || '0 min';
+  }
+
+  function loadPresets(){
+    const stored = loadJson(LS_PRESETS, null);
+    if (!Array.isArray(stored) || stored.length !== DEFAULT_PRESETS.length){
+      return DEFAULT_PRESETS.map(p => ({...p}));
+    }
+    // Merge onto defaults so a corrupted/partial entry still renders safely,
+    // and so the icon (not user-editable) always comes from the default.
+    return stored.map((p, i) => ({
+      label: (p && typeof p.label === 'string' && p.label.trim()) ? p.label.trim() : DEFAULT_PRESETS[i].label,
+      seconds: (p && Number.isFinite(p.seconds) && p.seconds > 0) ? p.seconds : DEFAULT_PRESETS[i].seconds,
+      icon: DEFAULT_PRESETS[i].icon,
+    }));
+  }
+  function savePresets(){
+    try{ localStorage.setItem(LS_PRESETS, JSON.stringify(PRESETS)); }catch(e){}
+  }
+  let PRESETS = loadPresets();
+
+  // Two cooking styles, based on published methods from championship pitmasters
+  // (e.g. high-heat "power cooking" techniques, and 3-2-1 vs hot-and-fast rib
+  // comparisons run by competition cooks like Christie Vanover of Girls Can Grill).
+  // Low & Slow is the traditional 225-250F approach; Hot & Fast runs 275F+ to cut
+  // total cook time roughly in half while still hitting a tender, bark-set result.
+  const BBQ_STYLES = {
+    lowSlow: {
+      key: 'lowSlow',
+      name: 'Low & Slow',
+      blurb: () => `<strong>Low & Slow (${formatTempRange(225,250)}):</strong> the traditional competition & backyard standard — steady low heat for maximum smoke penetration and slow connective-tissue breakdown. Takes longer, but it’s the classic route for big, collagen-heavy cuts.`
+    },
+    hotFast: {
+      key: 'hotFast',
+      name: 'Hot & Fast',
+      blurb: () => `<strong>Hot & Fast (${formatTemp(275)}+):</strong> a high-heat method used by many competition pitmasters — roughly half the cook time of low & slow by pushing through the stall faster, while still hitting a tender, competition-ready bite.`
+    }
+  };
+
+  // Recommended smoker temps + step timing are baseline figures for each style at
+  // each meat's default temp for that style. Minutes scale inversely with the
+  // chosen smoker temp within a style so nudging the temp knob fine-tunes timing.
+  const MEAT_PROFILES = [
+    {
+      id: 'brisket', name: 'Brisket', defaultWeight: 12,
+      styles: {
+        lowSlow: { defaultTemp: 225, minTemp: 200, maxTemp: 250 },
+        hotFast: { defaultTemp: 275, minTemp: 250, maxTemp: 300 }
+      },
+      steps: [
+        { label: 'First Spritz / Bark Check', lowSlow: 180, hotFast: 120, probe: 'Spritz only if the rub is set and does not smear; otherwise wait 30 min. Repeat every 45–60 min until wrap.', absorbsWrap: true, noWrapLabel: 'First Spritz / Bark Check (no wrap)', noWrapProbe: 'Spritz only after the bark begins to set, then repeat every 45–60 min through the stall as needed' },
+        { label: 'Stall / Wrap Check', lowSlow: 165, hotFast: 45, probe: '160–170°F internal — bark set, wrap now', wrapStage: true },
+        { label: 'Probe Check (post-wrap)', lowSlow: 120, hotFast: 165, probe: '195–200°F internal — start probing for tenderness', noWrapLabel: 'Probe Check (unwrapped)' },
+        { label: 'Rest', lowSlow: 90, hotFast: 65, probe: 'Pull at 203–205°F, rest until it drops to ~150°F before slicing' },
+      ]
+    },
+    {
+      id: 'ribs', name: 'Pork Ribs (3-2-1)', defaultWeight: 3,
+      styles: {
+        lowSlow: { defaultTemp: 225, minTemp: 200, maxTemp: 250 },
+        hotFast: { defaultTemp: 275, minTemp: 250, maxTemp: 300 }
+      },
+      steps: [
+        { label: 'First Spritz / Bark Check', lowSlow: 180, hotFast: 80, probe: 'Spritz only if the rub is set and does not smear; otherwise wait 15–30 min. Repeat every 30–45 min until the color and bark are ready for the wrap.', absorbsWrap: true, noWrapLabel: 'First Spritz / Bark Check (no wrap)', noWrapProbe: 'Spritz only after the bark begins to set, then repeat every 30–45 min through to the sauce stage' },
+        { label: 'Wrap Stage', lowSlow: 120, hotFast: 65, probe: '~165°F internal when you wrap', wrapStage: true },
+        { label: 'Sauce / Unwrapped Stage', lowSlow: 60, hotFast: 15, probe: '195–203°F internal, or when the rack bends & the surface cracks' },
+        { label: 'Rest', lowSlow: 15, hotFast: 15, probe: 'Done ~195–203°F; rest 10–15 min before slicing' },
+      ]
+    },
+    {
+      id: 'porkbutt', name: 'Pork Butt / Shoulder', defaultWeight: 8,
+      styles: {
+        lowSlow: { defaultTemp: 225, minTemp: 200, maxTemp: 250 },
+        hotFast: { defaultTemp: 275, minTemp: 250, maxTemp: 300 }
+      },
+      steps: [
+        { label: 'Spritz / Baste', lowSlow: 60, hotFast: 35, probe: null, absorbsWrap: true, noWrapLabel: 'Spritz / Baste (extended — no wrap)', noWrapProbe: 'Keep spritzing every 45–60 min through the stall — with no foil to trap moisture, a naked cook needs it more, not less' },
+        { label: 'Stall / Wrap Check', lowSlow: 300, hotFast: 165, probe: '150–160°F internal — bark set, wrap now', wrapStage: true },
+        { label: 'Probe Check (post-wrap)', lowSlow: 90, hotFast: 50, probe: '195–200°F internal — start probing for tenderness', noWrapLabel: 'Probe Check (unwrapped)' },
+        { label: 'Rest', lowSlow: 60, hotFast: 130, probe: 'Pull at 203–205°F — should probe like butter' },
+      ]
+    },
+    {
+      id: 'chicken', name: 'Whole Chicken', defaultWeight: 5,
+      styles: {
+        lowSlow: { defaultTemp: 250, minTemp: 225, maxTemp: 275 },
+        hotFast: { defaultTemp: 400, minTemp: 375, maxTemp: 425 }
+      },
+      steps: [
+        { label: 'Probe Check', lowSlow: 75, hotFast: 25, probe: '165°F in the breast — food-safe floor' },
+        { label: 'Crisp Skin Check', lowSlow: 45, hotFast: 10, probe: '175–180°F in the thigh for the best bite' },
+        { label: 'Rest', lowSlow: 15, hotFast: 10, probe: 'Rest 10–15 min — climbs a few degrees more' },
+      ]
+    },
+    {
+      id: 'turkey', name: 'Whole Turkey', defaultWeight: 14,
+      styles: {
+        lowSlow: { defaultTemp: 250, minTemp: 225, maxTemp: 275 },
+        hotFast: { defaultTemp: 350, minTemp: 325, maxTemp: 375 }
+      },
+      steps: [
+        { label: 'Baste', lowSlow: 75, hotFast: 40, probe: null },
+        { label: 'Probe Check', lowSlow: 90, hotFast: 40, probe: '165°F breast minimum / 175–180°F in the thigh' },
+        { label: 'Rest', lowSlow: 45, hotFast: 20, probe: 'Rest 20–30 min before carving' },
+      ]
+    },
+    {
+      id: 'salmon', name: 'Salmon', defaultWeight: 2,
+      styles: {
+        lowSlow: { defaultTemp: 250, minTemp: 225, maxTemp: 275 },
+        hotFast: { defaultTemp: 400, minTemp: 375, maxTemp: 425 }
+      },
+      steps: [
+        { label: 'Probe Check', lowSlow: 35, hotFast: 15, probe: '125–130°F for medium / 140–145°F well-done & flaky' },
+        { label: 'Rest', lowSlow: 10, hotFast: 5, probe: 'Rest ~5 min before serving' },
+      ]
+    },
+  ];
+
+  /* ---------------- Elements ---------------- */
+  const meatGrid      = document.getElementById("meatGrid");
+  const profilePanel  = document.getElementById("profilePanel");
+  const profileName   = document.getElementById("profileName");
+  const profileClose  = document.getElementById("profileClose");
+  const profileTemp   = document.getElementById("profileTemp");
+  const tempDown      = document.getElementById("tempDown");
+  const tempUp        = document.getElementById("tempUp");
+  const tempDefaultNote = document.getElementById("tempDefaultNote");
+  const tempUnitLabel = document.getElementById("tempUnitLabel");
+  const unitToggle    = document.getElementById("unitToggle");
+  const profileSteps  = document.getElementById("profileSteps");
+  const addAllStepsBtn = document.getElementById("addAllStepsBtn");
+  const addAllStepsLabel = document.getElementById("addAllStepsLabel");
+  const styleToggleRow = document.getElementById("styleToggleRow");
+  const styleBlurb    = document.getElementById("styleBlurb");
+  const totalCookTimeValue = document.getElementById("totalCookTimeValue");
+  const cookSessions  = document.getElementById("cookSessions");
+  const presetGrid   = document.getElementById("presetGrid");
+  const timerGrid    = document.getElementById("timerGrid");
+  const emptyState   = document.getElementById("emptyState");
+  const timerCount   = document.getElementById("timerCount");
+  const soundToggle  = document.getElementById("soundToggle");
+  const soundIcon    = document.getElementById("soundIcon");
+  const labelInput   = document.getElementById("customLabel");
+  const hrsInput     = document.getElementById("hrsInput");
+  const minsInput    = document.getElementById("minsInput");
+  const secsInput    = document.getElementById("secsInput");
+  const addCustomBtn = document.getElementById("addCustomBtn");
+  const pauseAllBtn  = document.getElementById("pauseAllBtn");
+  const resumeAllBtn = document.getElementById("resumeAllBtn");
+  const clearFinBtn  = document.getElementById("clearFinishedBtn");
+  const drawerToggle = document.getElementById("drawerToggle");
+  const notesDrawer  = document.getElementById("notesDrawer");
+  const notesBadge   = document.getElementById("notesBadge");
+  const cookLog      = document.getElementById("cook-log");
+  const timestampBtn = document.getElementById("timestampBtn");
+  const copyLogBtn   = document.getElementById("copyLogBtn");
+  const copyFeedback = document.getElementById("copyFeedback");
+  const notifyToggle = document.getElementById("notifyToggle");
+  const notifyIcon   = document.getElementById("notifyIcon");
+  const voiceToggle  = document.getElementById("voiceToggle");
+  const voiceIcon    = document.getElementById("voiceIcon");
+  const favoritesSection = document.getElementById("favoritesSection");
+  const favoriteGrid = document.getElementById("favoriteGrid");
+  const saveFavoriteBtn = document.getElementById("saveFavoriteBtn");
+  const saveFeedback = document.getElementById("saveFeedback");
+  const profileWeight = document.getElementById("profileWeight");
+  const cookMode = document.getElementById("cookMode");
+  const cookModeTitle = document.getElementById("cookModeTitle");
+  const cookModeSub = document.getElementById("cookModeSub");
+  const cookFocusStage = document.getElementById("cookFocusStage");
+  const cookFocusTime = document.getElementById("cookFocusTime");
+  const cookFocusEta = document.getElementById("cookFocusEta");
+  const cookModeActions = document.getElementById("cookModeActions");
+  const cookUpNext = document.getElementById("cookUpNext");
+  const setupSections = document.getElementById("setupSections");
+  const activeCooksSection = document.getElementById("activeCooksSection");
+  const scrollToTimersBtn = document.getElementById("scrollToTimersBtn");
+  const historySection = document.getElementById("historySection");
+  const historyGrid = document.getElementById("historyGrid");
+  const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+  const undoToast = document.getElementById("undoToast");
+  const undoMessage = document.getElementById("undoMessage");
+  const undoBtn = document.getElementById("undoBtn");
+  const confirmOverlay = document.getElementById("confirmOverlay");
+  const confirmMessage = document.getElementById("confirmMessage");
+  const confirmOkBtn = document.getElementById("confirmOkBtn");
+  const confirmCancelBtn = document.getElementById("confirmCancelBtn");
+  const presetEditOverlay = document.getElementById("presetEditOverlay");
+  const presetEditLabel = document.getElementById("presetEditLabel");
+  const presetEditHours = document.getElementById("presetEditHours");
+  const presetEditMinutes = document.getElementById("presetEditMinutes");
+  const presetEditSaveBtn = document.getElementById("presetEditSaveBtn");
+  const presetEditCancelBtn = document.getElementById("presetEditCancelBtn");
+  const presetEditResetBtn = document.getElementById("presetEditResetBtn");
+  const presetEditError = document.getElementById("presetEditError");
+  const stepEditOverlay = document.getElementById("stepEditOverlay");
+  const stepEditSub = document.getElementById("stepEditSub");
+  const stepEditHours = document.getElementById("stepEditHours");
+  const stepEditMinutes = document.getElementById("stepEditMinutes");
+  const stepEditError = document.getElementById("stepEditError");
+  const stepEditSaveBtn = document.getElementById("stepEditSaveBtn");
+  const stepEditCancelBtn = document.getElementById("stepEditCancelBtn");
+  const stepEditResetBtn = document.getElementById("stepEditResetBtn");
+
+  /* ---------------- Utility ---------------- */
+  function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  function fmtTime(totalSeconds){
+    totalSeconds = Math.max(0, Math.round(totalSeconds));
+    const h = Math.floor(totalSeconds/3600);
+    const m = Math.floor((totalSeconds%3600)/60);
+    const s = totalSeconds%60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function fmtDuration(seconds){
+    const h = Math.floor(seconds/3600);
+    const m = Math.floor((seconds%3600)/60);
+    const s = seconds%60;
+    let parts = [];
+    if (h) parts.push(h+'h');
+    if (m) parts.push(m+'m');
+    if (s && !h) parts.push(s+'s');
+    return parts.join(' ') || '0m';
+  }
+
+  function nowClock(){
+    const d = new Date();
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return `${h}:${m} ${ampm}`;
+  }
+
+  function clockAt(timestamp){
+    const d = new Date(timestamp);
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+  }
+
+  /* ---------------- Persistence ---------------- */
+  function loadTimers(){
+    try{
+      const raw = localStorage.getItem(LS_TIMERS);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }catch(e){ return []; }
+  }
+  function saveTimers(){
+    try{ localStorage.setItem(LS_TIMERS, JSON.stringify(timers)); }catch(e){}
+  }
+  function loadJson(key, fallback){
+    try{
+      const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+      return parsed === null ? fallback : parsed;
+    }catch(e){ return fallback; }
+  }
+  function saveGuided(){ try{ localStorage.setItem(LS_GUIDED, JSON.stringify(guidedCooks)); }catch(e){} }
+  function saveHistory(){ try{ localStorage.setItem(LS_HISTORY, JSON.stringify(cookHistory)); }catch(e){} }
+  function loadSound(){
+    try{
+      const raw = localStorage.getItem(LS_SOUND);
+      return raw === null ? true : raw === '1';
+    }catch(e){ return true; }
+  }
+  function saveSound(){
+    try{ localStorage.setItem(LS_SOUND, soundOn ? '1':'0'); }catch(e){}
+  }
+  function loadFlag(key, defaultVal){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw === null ? defaultVal : raw === '1';
+    }catch(e){ return defaultVal; }
+  }
+  function saveFlag(key, val){
+    try{ localStorage.setItem(key, val ? '1':'0'); }catch(e){}
+  }
+  function loadFavorites(){
+    try{
+      const raw = localStorage.getItem(LS_FAVORITES);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }catch(e){ return []; }
+  }
+  function saveFavorites(){
+    try{ localStorage.setItem(LS_FAVORITES, JSON.stringify(favorites)); }catch(e){}
+  }
+  function loadNotes(){
+    try{ return localStorage.getItem(LS_NOTES) || ''; }catch(e){ return ''; }
+  }
+  function saveNotes(){
+    try{ localStorage.setItem(LS_NOTES, cookLog.value); }catch(e){}
+  }
+  function loadTempUnit(){
+    try{ return localStorage.getItem(LS_TEMPUNIT) === 'C' ? 'C' : 'F'; }catch(e){ return 'F'; }
+  }
+  function saveTempUnit(){
+    try{ localStorage.setItem(LS_TEMPUNIT, tempUnit); }catch(e){}
+  }
+
+  /* ---------------- Temperature unit conversion (display only - all cooking
+     math/min-max clamps stay in Fahrenheit internally) ---------------- */
+  function fToC(f){ return Math.round((f - 32) * 5 / 9); }
+  function cToF(c){ return Math.round(c * 9 / 5 + 32); }
+  function formatTemp(f){
+    return tempUnit === 'F' ? `${f}°F` : `${fToC(f)}°C`;
+  }
+  function formatTempRange(fLow, fHigh){
+    return tempUnit === 'F' ? `${fLow}–${fHigh}°F` : `${fToC(fLow)}–${fToC(fHigh)}°C`;
+  }
+  function formatProbeText(text){
+    if (!text || tempUnit === 'F') return text || '';
+    return text.replace(/(\d{2,3})(?:[–-](\d{2,3}))?°F/g, (_, low, high) => high
+      ? `${fToC(Number(low))}–${fToC(Number(high))}°C`
+      : `${fToC(Number(low))}°C`);
+  }
+
+  /* ---------------- Audio (Web Audio API synthesized) ---------------- */
+  function ensureAudioCtx(){
+    if (!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended'){
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playChime(){
+    if (!soundOn) return;
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    // A short two-tone "ding-dong" style alert using oscillators + gain envelope
+    const freqs = [1046.5, 830.6]; // C6, then G#5 - a warm alert chime
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = t0 + i*0.16;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.28, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.55);
+    });
+    // a subtle low "knock" for warmth
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.value = 220;
+    gain2.gain.setValueAtTime(0, t0);
+    gain2.gain.linearRampToValueAtTime(0.12, t0+0.01);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, t0+0.3);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(t0);
+    osc2.stop(t0+0.32);
+  }
+
+  function vibrateBuzz(){
+    if (navigator.vibrate){
+      try{ navigator.vibrate([220, 90, 220]); }catch(e){}
+    }
+  }
+
+  function alarmPulse(){
+    playChime();
+    vibrateBuzz();
+  }
+
+  function startAlarmLoop(id){
+    stopAlarmLoop(id);
+    alarmPulse();
+    alarmIntervals[id] = setInterval(alarmPulse, 1800);
+  }
+  function stopAlarmLoop(id){
+    if (alarmIntervals[id]){
+      clearInterval(alarmIntervals[id]);
+      delete alarmIntervals[id];
+    }
+  }
+
+  /* ---------------- Wake Lock (keep screen on while cooking) ---------------- */
+  async function acquireWakeLock(){
+    if (!('wakeLock' in navigator)) return;
+    try{
+      wakeLockRef = await navigator.wakeLock.request('screen');
+      wakeLockRef.addEventListener('release', () => { wakeLockRef = null; });
+    }catch(e){ wakeLockRef = null; }
+  }
+  async function releaseWakeLock(){
+    if (wakeLockRef){
+      try{ await wakeLockRef.release(); }catch(e){}
+      wakeLockRef = null;
+    }
+  }
+  function syncWakeLock(){
+    const shouldHold = timers.some(t => t.status === 'active');
+    if (shouldHold && !wakeLockRef) acquireWakeLock();
+    if (!shouldHold && wakeLockRef) releaseWakeLock();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncWakeLock();
+  });
+
+  /* ---------------- System notifications ---------------- */
+  function notifyTimerDone(t){
+    if (!notifyOn) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try{
+      const n = new Notification('BBQ Pit-Master Timer', {
+        body: `${t.label} is done!`,
+        tag: t.id,
+        silent: true
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    }catch(e){}
+  }
+
+  /* ---------------- Voice announcements ----------------
+     Picks the best-sounding voice the browser/OS has available (many
+     platforms ship one or more higher-quality "natural"/"neural" voices
+     alongside the flat default) and tunes rate/pitch away from the robotic-
+     sounding 1.0/1.0 flat defaults, with a little natural phrase variety so
+     back-to-back alerts don't all read the exact same line. */
+  let cachedVoices = [];
+  function refreshVoiceList(){
+    cachedVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  }
+  if (window.speechSynthesis){
+    refreshVoiceList();
+    window.speechSynthesis.onvoiceschanged = refreshVoiceList;
+  }
+  function pickNaturalVoice(){
+    if (!cachedVoices.length) return null;
+    // Known higher-quality/"Natural"/"Neural" voices across major platforms.
+    const preferredNames = [
+      'Google US English', 'Microsoft Aria Online (Natural)', 'Microsoft Jenny Online (Natural)',
+      'Microsoft Guy Online (Natural)', 'Samantha', 'Ava', 'Alex', 'Karen', 'Daniel', 'Moira', 'Tessa'
+    ];
+    for (const name of preferredNames){
+      const v = cachedVoices.find(v => v.name === name);
+      if (v) return v;
+    }
+    const naturalMatch = cachedVoices.find(v => /natural|neural|premium|enhanced/i.test(v.name));
+    if (naturalMatch) return naturalMatch;
+    const localEnUS = cachedVoices.find(v => v.lang === 'en-US' && v.localService);
+    if (localEnUS) return localEnUS;
+    const anyEn = cachedVoices.find(v => /^en/i.test(v.lang));
+    return anyEn || cachedVoices[0];
+  }
+  function speakNatural(text){
+    if (!window.speechSynthesis) return;
+    try{
+      const utter = new SpeechSynthesisUtterance(text);
+      const voice = pickNaturalVoice();
+      if (voice) utter.voice = voice;
+      // Slightly slower than flat/default + a touch of pitch lift reads as a
+      // relaxed spoken heads-up instead of a monotone system beep-in-words.
+      utter.rate = 0.94;
+      utter.pitch = 1.04;
+      utter.volume = 0.9;
+      window.speechSynthesis.speak(utter);
+    }catch(e){}
+  }
+  const READY_PHRASES = [
+    label => `Hey, your ${label} timer is done.`,
+    label => `Heads up — ${label} is ready.`,
+    label => `Time's up on ${label}.`,
+  ];
+  function announce(t){
+    if (!voiceOn || !window.speechSynthesis) return;
+    const phrase = READY_PHRASES[Math.floor(Math.random() * READY_PHRASES.length)];
+    speakNatural(phrase(t.label));
+  }
+
+  /* ---------------- Timer model helpers ---------------- */
+  // timer: { id, label, totalSeconds, remainingSeconds, status: active|paused|done|finished, endTime }
+  function createTimer(label, totalSeconds, meta){
+    if (totalSeconds <= 0) return;
+    const t = {
+      id: uid(),
+      label: label && label.trim() ? label.trim() : 'Timer',
+      totalSeconds: totalSeconds,
+      remainingSeconds: totalSeconds,
+      status: 'active',
+      endTime: Date.now() + totalSeconds*1000,
+      createdAt: Date.now(), // when this stage was added - used to track how long its cook session has been running
+      ...(meta || {})
+    };
+    timers.unshift(t);
+    saveTimers();
+    render();
+    return t;
+  }
+
+  function pauseTimer(id){
+    const t = timers.find(x => x.id === id);
+    if (!t || t.status !== 'active') return;
+    t.remainingSeconds = Math.max(0, Math.round((t.endTime - Date.now())/1000));
+    t.status = 'paused';
+    saveTimers();
+    render();
+  }
+  function resumeTimer(id){
+    const t = timers.find(x => x.id === id);
+    if (!t || t.status !== 'paused') return;
+    t.endTime = Date.now() + t.remainingSeconds*1000;
+    t.status = 'active';
+    saveTimers();
+    render();
+  }
+  function addTime(id, seconds){
+    const t = timers.find(x => x.id === id);
+    if (!t) return;
+    if (t.status === 'active'){
+      t.endTime += seconds*1000;
+    } else {
+      t.remainingSeconds = Math.max(0, t.remainingSeconds + seconds);
+    }
+    saveTimers();
+    render();
+  }
+  function dismissTimer(id){
+    const t = timers.find(x => x.id === id);
+    if (!t) return;
+    stopAlarmLoop(id);
+    t.status = 'finished';
+    t.remainingSeconds = 0;
+    const session = t.sessionId ? guidedCooks.find(c => c.id === t.sessionId) : null;
+    if (session && session.currentIndex >= session.stages.length - 1) completeGuidedCook(session.id);
+    saveTimers();
+    render();
+  }
+  function snoozeTimer(id, minutes){
+    const t = timers.find(x => x.id === id);
+    if (!t) return;
+    stopAlarmLoop(id);
+    t.status = 'active';
+    t.remainingSeconds = minutes*60;
+    t.endTime = Date.now() + minutes*60*1000;
+    saveTimers();
+    render();
+  }
+  function deleteTimer(id){
+    const idx = timers.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    if (timers[idx].sessionId && guidedCooks.some(c => c.id === timers[idx].sessionId && c.status === 'active')){
+      cancelGuidedCook(timers[idx].sessionId);
+      return;
+    }
+    stopAlarmLoop(id);
+    deletedTimerSnapshot = { timer: timers[idx], index: idx };
+    timers.splice(idx, 1);
+    saveTimers();
+    render();
+    showUndo(`${deletedTimerSnapshot.timer.label} deleted`);
+  }
+  function pauseAll(){
+    timers.forEach(t => { if (t.status === 'active') pauseTimerSilent(t); });
+    saveTimers();
+    render();
+  }
+  function pauseTimerSilent(t){
+    t.remainingSeconds = Math.max(0, Math.round((t.endTime - Date.now())/1000));
+    t.status = 'paused';
+  }
+  function resumeAll(){
+    timers.forEach(t => {
+      if (t.status === 'paused'){
+        t.endTime = Date.now() + t.remainingSeconds*1000;
+        t.status = 'active';
+      }
+    });
+    saveTimers();
+    render();
+  }
+  function clearFinished(){
+    timers.filter(t => t.status === 'finished').forEach(t => stopAlarmLoop(t.id));
+    timers = timers.filter(t => t.status !== 'finished');
+    saveTimers();
+    render();
+  }
+
+  function showUndo(message){
+    undoMessage.textContent = message;
+    undoToast.classList.add('show');
+    clearTimeout(undoTimeout);
+    undoTimeout = setTimeout(() => {
+      undoToast.classList.remove('show');
+      deletedTimerSnapshot = null;
+    }, 5500);
+  }
+
+  undoBtn.addEventListener('click', () => {
+    if (!deletedTimerSnapshot) return;
+    timers.splice(Math.min(deletedTimerSnapshot.index, timers.length), 0, deletedTimerSnapshot.timer);
+    deletedTimerSnapshot = null;
+    undoToast.classList.remove('show');
+    saveTimers();
+    render();
+  });
+
+  /* ---------------- In-app confirm dialog ----------------
+     Replaces window.confirm(), which some embedded/sandboxed webviews
+     block or auto-dismiss silently - making destructive buttons (Cancel
+     Cook, Reset Cook, Clear History) look like they simply do nothing. */
+  let pendingConfirmAction = null;
+  function showConfirm(message, onConfirm){
+    confirmMessage.textContent = message;
+    pendingConfirmAction = onConfirm;
+    confirmOverlay.classList.add('show');
+  }
+  function hideConfirm(){
+    confirmOverlay.classList.remove('show');
+    pendingConfirmAction = null;
+  }
+  confirmOkBtn.addEventListener('click', () => {
+    const action = pendingConfirmAction;
+    hideConfirm();
+    if (action) action();
+  });
+  confirmCancelBtn.addEventListener('click', hideConfirm);
+  confirmOverlay.addEventListener('click', (e) => {
+    if (e.target === confirmOverlay) hideConfirm();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && confirmOverlay.classList.contains('show')) hideConfirm();
+  });
+
+  /* ---------------- Preset customization ----------------
+     Lets the user rename a Quick Add preset and adjust its time up or
+     down; saved to localStorage so it persists across visits. */
+  let presetEditIdx = null;
+  function openPresetEditor(idx){
+    const p = PRESETS[idx];
+    if (!p) return;
+    presetEditIdx = idx;
+    presetEditLabel.value = p.label;
+    presetEditHours.value = Math.floor(p.seconds / 3600);
+    presetEditMinutes.value = Math.round((p.seconds % 3600) / 60);
+    presetEditError.hidden = true;
+    presetEditOverlay.classList.add('show');
+    setTimeout(() => presetEditLabel.focus(), 50);
+  }
+  function closePresetEditor(){
+    presetEditOverlay.classList.remove('show');
+    presetEditIdx = null;
+  }
+  presetEditSaveBtn.addEventListener('click', () => {
+    if (presetEditIdx === null) return;
+    const label = presetEditLabel.value.trim();
+    const hours = Math.max(0, Math.min(24, parseInt(presetEditHours.value, 10) || 0));
+    const minutes = Math.max(0, Math.min(59, parseInt(presetEditMinutes.value, 10) || 0));
+    const seconds = hours*3600 + minutes*60;
+    if (!label){
+      presetEditError.textContent = 'Give this preset a name before saving.';
+      presetEditError.hidden = false;
+      return;
+    }
+    if (seconds <= 0){
+      presetEditError.textContent = 'Set a time greater than 0 before saving.';
+      presetEditError.hidden = false;
+      return;
+    }
+    PRESETS[presetEditIdx] = { ...PRESETS[presetEditIdx], label, seconds };
+    savePresets();
+    renderPresets();
+    closePresetEditor();
+  });
+  presetEditCancelBtn.addEventListener('click', closePresetEditor);
+  presetEditResetBtn.addEventListener('click', () => {
+    if (presetEditIdx === null) return;
+    PRESETS[presetEditIdx] = { ...DEFAULT_PRESETS[presetEditIdx] };
+    savePresets();
+    renderPresets();
+    closePresetEditor();
+  });
+  presetEditOverlay.addEventListener('click', (e) => {
+    if (e.target === presetEditOverlay) closePresetEditor();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && presetEditOverlay.classList.contains('show')) closePresetEditor();
+  });
+
+  function weightFactor(profile, pounds){
+    const base = profile.defaultWeight || pounds || 1;
+    const raw = Math.pow(Math.max(.5, pounds || base) / base, .35);
+    return Math.max(.78, Math.min(1.35, raw));
+  }
+
+  function startGuidedFromStages(data){
+    const session = {
+      id: 'c' + uid(),
+      profileId: data.profileId,
+      name: data.name,
+      style: data.style,
+      smokerTemp: data.smokerTemp,
+      weight: data.weight,
+      stages: data.stages.map(s => ({...s})),
+      currentIndex: 0,
+      startedAt: Date.now(),
+      status: 'active'
+    };
+    guidedCooks.unshift(session);
+    saveGuided();
+    startGuidedStage(session);
+    cookMode.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function startGuidedCook(profile, style, smokerTemp, pounds, indices){
+    const factor = weightFactor(profile, pounds);
+    const stages = indices.map(i => ({
+      label: stepDisplayLabel(profile, i),
+      seconds: Math.max(60, Math.round(effectiveStepMinutes(profile, style, smokerTemp, i) * factor) * 60),
+      probe: stepDisplayProbe(profile, i) || ''
+    }));
+    startGuidedFromStages({profileId:profile.id, name:profile.name, style, smokerTemp, weight:pounds, stages});
+  }
+
+  function startGuidedStage(session){
+    const stage = session.stages[session.currentIndex];
+    if (!stage){ completeGuidedCook(session.id); return; }
+    createTimer(`${session.name} - ${stage.label}`, stage.seconds, {
+      sessionId: session.id,
+      stageIndex: session.currentIndex,
+      stageProbe: stage.probe
+    });
+    saveGuided();
+  }
+
+  function advanceGuidedCook(sessionId){
+    const session = guidedCooks.find(c => c.id === sessionId && c.status === 'active');
+    if (!session) return;
+    const current = timers.find(t => t.sessionId === sessionId && t.stageIndex === session.currentIndex && t.status !== 'finished');
+    if (current){
+      stopAlarmLoop(current.id);
+      current.status = 'finished';
+      current.remainingSeconds = 0;
+    }
+    session.currentIndex += 1;
+    if (session.currentIndex >= session.stages.length) completeGuidedCook(sessionId);
+    else startGuidedStage(session);
+    saveTimers();
+    saveGuided();
+    render();
+  }
+
+  function resetGuidedCook(sessionId){
+    const session = guidedCooks.find(c => c.id === sessionId && c.status === 'active');
+    if (!session) return;
+    showConfirm(`Reset the entire ${session.name} cook back to stage 1?`, () => {
+      timers.filter(t => t.sessionId === sessionId).forEach(t => stopAlarmLoop(t.id));
+      timers = timers.filter(t => t.sessionId !== sessionId);
+      session.currentIndex = 0;
+      session.startedAt = Date.now();
+      session.status = 'active';
+      saveTimers();
+      saveGuided();
+      startGuidedStage(session);
+      render();
+    });
+  }
+
+  function cancelGuidedCook(sessionId, skipConfirm){
+    const session = guidedCooks.find(c => c.id === sessionId && c.status === 'active');
+    if (!session) return;
+    const doCancel = () => {
+      timers.filter(t => t.sessionId === sessionId).forEach(t => stopAlarmLoop(t.id));
+      timers = timers.filter(t => t.sessionId !== sessionId);
+      session.status = 'cancelled';
+      session.cancelledAt = Date.now();
+      saveTimers();
+      saveGuided();
+      render();
+    };
+    if (skipConfirm) doCancel();
+    else showConfirm(`Cancel the entire ${session.name} cook? All of its stages will be removed.`, doCancel);
+  }
+
+  function completeGuidedCook(sessionId){
+    const session = guidedCooks.find(c => c.id === sessionId);
+    if (!session || session.status === 'completed') return;
+    session.status = 'completed';
+    session.completedAt = Date.now();
+    cookHistory.unshift({
+      id: 'h' + uid(), profileId: session.profileId, name: session.name,
+      style: session.style, smokerTemp: session.smokerTemp, weight: session.weight,
+      stages: session.stages.map(s => ({...s})), startedAt: session.startedAt,
+      completedAt: session.completedAt
+    });
+    cookHistory = cookHistory.slice(0, 20);
+    saveGuided();
+    saveHistory();
+  }
+
+  function sessionRemainingSeconds(session, currentTimer){
+    let seconds = currentTimer ? currentTimer.remainingSeconds : 0;
+    for (let i = session.currentIndex + 1; i < session.stages.length; i++) seconds += session.stages[i].seconds;
+    return seconds;
+  }
+
+  function renderCookMode(){
+    const session = guidedCooks.find(c => c.status === 'active');
+    const standalone = timers.find(t => !t.sessionId && (t.status === 'active' || t.status === 'paused' || t.status === 'done'));
+    const current = session
+      ? timers.find(t => t.sessionId === session.id && t.stageIndex === session.currentIndex && t.status !== 'finished')
+      : standalone;
+    if (!current){
+      cookMode.classList.remove('visible');
+      setupSections.classList.remove('has-active');
+      return;
+    }
+    cookMode.classList.add('visible');
+    setupSections.classList.add('has-active');
+    cookModeTitle.textContent = session ? session.name : current.label;
+    cookModeSub.textContent = session
+      ? `${BBQ_STYLES[session.style]?.name || session.style} • ${formatTemp(session.smokerTemp)} • ${session.weight || '—'} lb • estimated finish ${clockAt(Date.now() + sessionRemainingSeconds(session,current)*1000)}`
+      : `Ends around ${clockAt(current.endTime || Date.now())}`;
+    const stage = session ? session.stages[session.currentIndex] : null;
+    cookFocusStage.textContent = stage ? stage.label : current.label;
+    cookFocusTime.textContent = current.status === 'done' ? "TIME'S UP" : fmtTime(current.remainingSeconds);
+    cookFocusEta.textContent = stage && stage.probe ? formatProbeText(stage.probe) : `Estimated stage end ${clockAt(current.endTime || Date.now())}`;
+    const pauseAction = current.status === 'active'
+      ? `<button class="btn ghost" data-cook-action="pause" data-id="${current.id}">Pause</button>`
+      : current.status === 'paused'
+        ? `<button class="btn primary" data-cook-action="resume" data-id="${current.id}">Resume</button>` : '';
+    const nextAction = session
+      ? `<button class="btn primary" data-cook-action="next" data-session="${session.id}">${session.currentIndex === session.stages.length-1 ? 'Finish Cook' : (current.status === 'done' ? 'Start Next Stage' : 'Finish Stage')}</button>` : '';
+    const wholeCookActions = session
+      ? `<button class="btn ghost" data-cook-action="reset" data-session="${session.id}">Reset Cook</button><button class="btn danger-outline" data-cook-action="cancel" data-session="${session.id}">Cancel Cook</button>` : '';
+    const actionsHtml = `${pauseAction}<button class="btn ghost" data-cook-action="add5" data-id="${current.id}">+5 min</button>${nextAction}${wholeCookActions}`;
+    if (cookModeActions.innerHTML !== actionsHtml) cookModeActions.innerHTML = actionsHtml;
+    if (session){
+      let runningClock = Date.now();
+      const planHtml = session.stages.map((s,i) => {
+        if (i < session.currentIndex) return `<div class="next-stage-row"><span>✓ ${escapeHtml(s.label)}</span><span>Done</span></div>`;
+        const sec = i === session.currentIndex ? current.remainingSeconds : s.seconds;
+        runningClock += sec * 1000;
+        return `<div class="next-stage-row${i===session.currentIndex?' current':''}"><span>${i===session.currentIndex?'Now — ':''}${escapeHtml(s.label)}</span><span>~${clockAt(runningClock)}</span></div>`;
+      }).join('');
+      if (cookUpNext.innerHTML !== planHtml) cookUpNext.innerHTML = planHtml;
+    } else {
+      const planHtml = `<div class="next-stage-row current"><span>${escapeHtml(current.label)}</span><span>${fmtDuration(current.remainingSeconds)}</span></div>`;
+      if (cookUpNext.innerHTML !== planHtml) cookUpNext.innerHTML = planHtml;
+    }
+  }
+
+  cookMode.addEventListener('click', e => {
+    const btn = e.target.closest('[data-cook-action]');
+    if (!btn) return;
+    ensureAudioCtx();
+    if (btn.dataset.cookAction === 'pause') pauseTimer(btn.dataset.id);
+    if (btn.dataset.cookAction === 'resume') resumeTimer(btn.dataset.id);
+    if (btn.dataset.cookAction === 'add5') addTime(btn.dataset.id, 300);
+    if (btn.dataset.cookAction === 'next') advanceGuidedCook(btn.dataset.session);
+    if (btn.dataset.cookAction === 'reset') resetGuidedCook(btn.dataset.session);
+    if (btn.dataset.cookAction === 'cancel') cancelGuidedCook(btn.dataset.session);
+  });
+
+  scrollToTimersBtn.addEventListener('click', () => activeCooksSection.scrollIntoView({behavior:'smooth'}));
+
+  /* ---------------- Tick loop ---------------- */
+  function tick(){
+    let changed = false;
+    timers.forEach(t => {
+      if (t.status === 'active'){
+        const remaining = Math.round((t.endTime - Date.now())/1000);
+        if (remaining <= 0 && t.remainingSeconds > 0){
+          t.remainingSeconds = 0;
+          t.status = 'done';
+          startAlarmLoop(t.id);
+          notifyTimerDone(t);
+          announce(t);
+          changed = true;
+        } else {
+          t.remainingSeconds = Math.max(0, remaining);
+        }
+      }
+    });
+    if (changed){ saveTimers(); syncWakeLock(); }
+    updateDisplays();
+    updateTabTitle();
+    renderCookSessions();
+    renderCookMode();
+  }
+
+  function updateTabTitle(){
+    const doneCount = timers.filter(t => t.status === 'done').length;
+    if (doneCount > 0){
+      const flashOn = Math.floor(Date.now()/1000) % 2 === 0;
+      document.title = flashOn
+        ? `\uD83D\uDD25 ${doneCount} Timer${doneCount>1?'s':''} Done!`
+        : ORIGINAL_TITLE;
+      return;
+    }
+    const activeCount = timers.filter(t => t.status === 'active').length;
+    document.title = activeCount > 0 ? `(${activeCount}) ${ORIGINAL_TITLE}` : ORIGINAL_TITLE;
+  }
+
+  /* ---------------- Rendering ---------------- */
+  function ringCircumference(r){ return 2 * Math.PI * r; }
+
+  function buildTicks(cx, cy, r){
+    // decorative gauge ticks around the ring, evoking a thermometer dial
+    let marks = '';
+    const count = 40;
+    for (let i=0;i<count;i++){
+      const angle = (i / count) * Math.PI * 2 - Math.PI/2;
+      const inner = r - 3;
+      const outer = r + (i % 5 === 0 ? 3 : 0);
+      const x1 = cx + inner*Math.cos(angle);
+      const y1 = cy + inner*Math.sin(angle);
+      const x2 = cx + outer*Math.cos(angle);
+      const y2 = cy + outer*Math.sin(angle);
+      marks += `<line class="ring-tick" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"/>`;
+    }
+    return marks;
+  }
+
+  function cardTemplate(t){
+    const size = 190, cx = size/2, cy = size/2, r = 78;
+    const circ = ringCircumference(r);
+    const fraction = t.totalSeconds > 0 ? Math.max(0, Math.min(1, t.remainingSeconds / t.totalSeconds)) : 0;
+    const dashOffset = t.status === 'done' ? 0 : circ * (1 - fraction);
+    const ringClass = t.status; // active | paused | done | finished
+    const session = t.sessionId ? guidedCooks.find(c => c.id === t.sessionId && c.status === 'active') : null;
+    const hasNextStage = !!session;
+
+    const statusLabelMap = { active:'Active', paused:'Paused', done:'Time\u2019s Up', finished:'Finished' };
+
+    let controlsHtml = '';
+    if (t.status === 'active'){
+      controlsHtml = `
+        <div class="card-controls">
+          <button class="btn ghost" data-action="pause" data-id="${t.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            Pause
+          </button>
+          <button class="btn ghost" data-action="add5m" data-id="${t.id}">+5 min</button>
+          ${hasNextStage ? `<button class="btn primary" data-action="nextstage" data-session="${t.sessionId}">Finish Stage</button>` : `<button class="btn danger-outline" data-action="delete" data-id="${t.id}">Cancel</button>`}
+        </div>`;
+    } else if (t.status === 'paused'){
+      controlsHtml = `
+        <div class="card-controls">
+          <button class="btn primary" data-action="resume" data-id="${t.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            Resume
+          </button>
+          <button class="btn ghost" data-action="add5m" data-id="${t.id}">+5 min</button>
+          ${hasNextStage ? `<button class="btn primary" data-action="nextstage" data-session="${t.sessionId}">Finish Stage</button>` : `<button class="btn danger-outline" data-action="delete" data-id="${t.id}">Cancel</button>`}
+        </div>`;
+    } else if (t.status === 'done'){
+      controlsHtml = `
+        <div class="alarm-controls">
+          ${hasNextStage ? `<button class="btn primary" data-action="nextstage" data-session="${t.sessionId}">${session.currentIndex === session.stages.length-1 ? 'Finish Cook' : 'Start Next Stage'}</button>` : `<button class="btn snooze" data-action="snooze" data-id="${t.id}">Snooze 5m</button>`}
+          <button class="btn dismiss" data-action="dismiss" data-id="${t.id}">Dismiss</button>
+        </div>`;
+    } else {
+      controlsHtml = `
+        <div class="card-controls">
+          <button class="btn ghost" data-action="restart" data-id="${t.id}">Restart</button>
+        </div>`;
+    }
+
+    return `
+    <article class="card" data-status="${t.status}" data-id="${t.id}">
+      <button class="card-delete" data-action="delete" data-id="${t.id}" aria-label="Delete timer" title="Delete timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="card-top">
+        <div class="card-label">${escapeHtml(t.label)}</div>
+        <div class="status-chip ${ringClass}">${(t.status==='active'||t.status==='done') ? flameGlyph('chip-flame flame-real') : ''}${statusLabelMap[t.status]}</div>
+      </div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 ${size} ${size}">
+          ${buildTicks(cx, cy, r+11)}
+          <circle class="ring-track" cx="${cx}" cy="${cy}" r="${r}"></circle>
+          <circle class="ring-progress ${ringClass}" cx="${cx}" cy="${cy}" r="${r}"
+            stroke-dasharray="${circ.toFixed(2)}"
+            stroke-dashoffset="${dashOffset.toFixed(2)}"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="time">${fmtTime(t.remainingSeconds)}</div>
+          <div class="sub">of ${fmtDuration(t.totalSeconds)}</div>
+        </div>
+      </div>
+      <div class="timer-eta">${t.status === 'active' ? `Ends around ${clockAt(t.endTime)}` : (t.status === 'paused' ? 'Finish time recalculates when resumed' : '')}${t.stageProbe ? `<br>${escapeHtml(formatProbeText(t.stageProbe))}` : ''}</div>
+      ${controlsHtml}
+    </article>`;
+  }
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render(){
+    // full re-render (structure) - called on any state-changing action
+    if (timers.length === 0){
+      timerGrid.innerHTML = '';
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      timerGrid.innerHTML = timers.map(cardTemplate).join('');
+    }
+    timerCount.textContent = timers.length ? `(${timers.length})` : '';
+
+    notesBadge.style.display = cookLog.value.trim() && !notesDrawer.classList.contains('open') ? 'inline-flex' : 'none';
+
+    const hasActive = timers.some(t => t.status === 'active');
+    const hasPaused = timers.some(t => t.status === 'paused');
+    const hasFinished = timers.some(t => t.status === 'finished' || t.status === 'done');
+    pauseAllBtn.disabled = !hasActive;
+    resumeAllBtn.disabled = !hasPaused;
+    clearFinBtn.disabled = !timers.some(t => t.status === 'finished');
+
+    // re-sync alarms: ensure any 'done' timers are looping, others aren't
+    timers.forEach(t => {
+      if (t.status === 'done' && !alarmIntervals[t.id]) startAlarmLoop(t.id);
+      if (t.status !== 'done' && alarmIntervals[t.id]) stopAlarmLoop(t.id);
+    });
+
+    syncWakeLock();
+    updateTabTitle();
+    renderFavorites();
+    renderCookSessions();
+    renderCookMode();
+    renderHistory();
+  }
+
+  function renderHistory(){
+    historySection.hidden = cookHistory.length === 0;
+    historyGrid.innerHTML = cookHistory.map(h => {
+      const elapsed = Math.max(0, Math.round((h.completedAt - h.startedAt)/1000));
+      return `<article class="history-card">
+        <div class="history-name">${escapeHtml(h.name)}</div>
+        <div class="history-meta">${BBQ_STYLES[h.style]?.name || h.style} • ${formatTemp(h.smokerTemp)} • ${h.weight || '—'} lb<br>${new Date(h.completedAt).toLocaleDateString()} • ${fmtDuration(elapsed)}</div>
+        <button class="btn ghost" type="button" data-replay="${h.id}">Cook this again</button>
+      </article>`;
+    }).join('');
+  }
+
+  historyGrid.addEventListener('click', e => {
+    const btn = e.target.closest('[data-replay]');
+    if (!btn) return;
+    const h = cookHistory.find(x => x.id === btn.dataset.replay);
+    if (h) startGuidedFromStages(h);
+  });
+
+  clearHistoryBtn.addEventListener('click', () => {
+    showConfirm('Clear your saved cook history?', () => {
+      cookHistory = [];
+      saveHistory();
+      renderHistory();
+    });
+  });
+
+  function renderCookSessions(){
+    const activeSessions = guidedCooks.filter(c => c.status === 'active');
+    if (activeSessions.length === 0){
+      cookSessions.hidden = true;
+      cookSessions.innerHTML = '';
+      return;
+    }
+    cookSessions.hidden = false;
+    const sessionsHtml = activeSessions.map(session => {
+      const elapsedSec = Math.max(0, Math.floor((Date.now() - session.startedAt)/60000) * 60);
+      return `
+        <div class="cook-session-chip">
+          <span class="csc-icon">${flameGlyphSolid('flame-real-solid')}</span>
+          <span class="csc-text">
+            <span class="csc-name">${escapeHtml(session.name)}</span>
+            <span class="csc-elapsed">Stage ${session.currentIndex + 1}/${session.stages.length} • ${fmtDuration(elapsedSec)}</span>
+          </span>
+          <span class="csc-actions">
+            <button class="csc-action" type="button" data-session-action="reset" data-session="${session.id}">Reset</button>
+            <button class="csc-action cancel" type="button" data-session-action="cancel" data-session="${session.id}">Cancel</button>
+          </span>
+        </div>`;
+    }).join('');
+    if (cookSessions.innerHTML !== sessionsHtml) cookSessions.innerHTML = sessionsHtml;
+  }
+
+  cookSessions.addEventListener('click', e => {
+    const btn = e.target.closest('[data-session-action]');
+    if (!btn) return;
+    if (btn.dataset.sessionAction === 'reset') resetGuidedCook(btn.dataset.session);
+    if (btn.dataset.sessionAction === 'cancel') cancelGuidedCook(btn.dataset.session);
+  });
+
+  function updateDisplays(){
+    // lightweight update each tick: just update time text + ring, no full re-render
+    timers.forEach(t => {
+      const card = timerGrid.querySelector(`.card[data-id="${t.id}"]`);
+      if (!card) return;
+      if (card.dataset.status !== t.status){
+        // status changed (e.g. active -> done): full re-render needed
+        render();
+        return;
+      }
+      const timeEl = card.querySelector('.ring-center .time');
+      if (timeEl) timeEl.textContent = fmtTime(t.remainingSeconds);
+      const ring = card.querySelector('.ring-progress');
+      if (ring){
+        const r = 78;
+        const circ = ringCircumference(r);
+        const fraction = t.totalSeconds > 0 ? Math.max(0, Math.min(1, t.remainingSeconds / t.totalSeconds)) : 0;
+        const dashOffset = t.status === 'done' ? 0 : circ * (1 - fraction);
+        ring.setAttribute('stroke-dashoffset', dashOffset.toFixed(2));
+      }
+    });
+  }
+
+  /* ---------------- Event delegation on timer grid ---------------- */
+  timerGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    ensureAudioCtx();
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    if (action === 'pause') pauseTimer(id);
+    else if (action === 'resume') resumeTimer(id);
+    else if (action === 'add5m') addTime(id, 300);
+    else if (action === 'dismiss') dismissTimer(id);
+    else if (action === 'snooze') snoozeTimer(id, 5);
+    else if (action === 'delete') deleteTimer(id);
+    else if (action === 'nextstage') advanceGuidedCook(btn.dataset.session);
+    else if (action === 'restart'){
+      const t = timers.find(x => x.id === id);
+      if (t){
+        t.status = 'active';
+        t.remainingSeconds = t.totalSeconds;
+        t.endTime = Date.now() + t.totalSeconds*1000;
+        saveTimers();
+        render();
+      }
+    }
+  });
+
+  /* ---------------- Meat & Temp Profiles ---------------- */
+  let selectedProfile = null;   // the MEAT_PROFILES entry currently open
+  let currentStyle = 'lowSlow'; // 'lowSlow' | 'hotFast' - style currently active in the panel
+  let currentTemp = null;       // the smoker temp the panel is currently using
+  let currentWeight = null;     // optional planning input; never a doneness guarantee
+  let selectedSteps = new Set(); // indices of steps that will be included when "Add Selected Steps" runs
+
+  function scaleMinutes(baseMinutes, baseTemp, targetTemp){
+    // Higher smoker temp -> shorter step time, and vice versa.
+    // Simple inverse-proportional model, rounded to the nearest 5 minutes.
+    const ratio = baseTemp / targetTemp;
+    const scaled = baseMinutes * ratio;
+    return Math.max(5, Math.round(scaled / 5) * 5);
+  }
+
+  function styleCfg(profile, styleKey){
+    return profile.styles[styleKey];
+  }
+
+  // Index of the literal "wrap" step in a profile (Ribs' Wrap Stage, or
+  // Brisket/Pork Butt's Stall/Wrap Check), if it has one.
+  function wrapStageIndex(profile){
+    return profile.steps.findIndex(s => s.wrapStage);
+  }
+
+  // A stage's user-customized base minutes for a given style, if the user
+  // has edited it via the stage's pencil icon - otherwise the profile's
+  // built-in default. This is the number scaleMinutes() treats as "the time
+  // at this style's default temp", so temp/weight scaling still applies on
+  // top of a custom value exactly like it does for the built-in ones.
+  function stepBaseMinutes(profile, idx, styleKey){
+    const override = stepTimeOverrides[profile.id] && stepTimeOverrides[profile.id][idx];
+    if (override && Number.isFinite(override[styleKey]) && override[styleKey] > 0) return override[styleKey];
+    return profile.steps[idx][styleKey];
+  }
+  function hasStepOverride(profile, idx, styleKey){
+    const override = stepTimeOverrides[profile.id] && stepTimeOverrides[profile.id][idx];
+    return !!(override && Number.isFinite(override[styleKey]) && override[styleKey] > 0);
+  }
+  function setStepOverride(profile, idx, styleKey, minutes){
+    if (!stepTimeOverrides[profile.id]) stepTimeOverrides[profile.id] = {};
+    if (!stepTimeOverrides[profile.id][idx]) stepTimeOverrides[profile.id][idx] = {};
+    stepTimeOverrides[profile.id][idx][styleKey] = minutes;
+    saveStepTimeOverrides();
+  }
+  function clearStepOverride(profile, idx, styleKey){
+    const forProfile = stepTimeOverrides[profile.id];
+    if (!forProfile || !forProfile[idx]) return;
+    delete forProfile[idx][styleKey];
+    if (Object.keys(forProfile[idx]).length === 0) delete forProfile[idx];
+    if (Object.keys(forProfile).length === 0) delete stepTimeOverrides[profile.id];
+    saveStepTimeOverrides();
+  }
+  function saveStepTimeOverrides(){
+    try{ localStorage.setItem(LS_STEP_OVERRIDES, JSON.stringify(stepTimeOverrides)); }catch(e){}
+  }
+
+  // A stage's actual minutes. The meat takes the same total time to cook
+  // whether or not you wrap it partway through - wrapping mainly changes
+  // bark/texture, not how long the smoker needs to run. So skipping the wrap
+  // stage doesn't remove time from the cook: that block just isn't a
+  // separate "wrapped" phase anymore, and its minutes fold 1:1 into the
+  // stage that follows (relabeled to a no-wrap variant). Net effect: total
+  // cook time is unchanged either way, just regrouped into fewer phases.
+  function effectiveStepMinutes(profile, styleKey, temp, idx){
+    const cfg = styleCfg(profile, styleKey);
+    const step = profile.steps[idx];
+    let mins = scaleMinutes(stepBaseMinutes(profile, idx, styleKey), cfg.defaultTemp, temp);
+    if (step.absorbsWrap && isWrapSkipped(profile)){
+      const wrapIdx = wrapStageIndex(profile);
+      const wrapMinutes = scaleMinutes(stepBaseMinutes(profile, wrapIdx, styleKey), cfg.defaultTemp, temp);
+      mins = mins + wrapMinutes; // straight fold-in, no penalty - same total time either way
+    }
+    return mins;
+  }
+
+  function estimatedStepMinutes(profile, styleKey, temp, idx){
+    return Math.max(5, Math.round(effectiveStepMinutes(profile, styleKey, temp, idx) * weightFactor(profile, currentWeight) / 5) * 5);
+  }
+
+  // True when this profile has a wrap stage and the user has deselected it.
+  function isWrapSkipped(profile){
+    const wIdx = wrapStageIndex(profile);
+    return wIdx !== -1 && !selectedSteps.has(wIdx);
+  }
+
+  // The label to show/use for a step - swapped to its no-wrap variant
+  // whenever the wrap stage is skipped, since some labels ("post-wrap",
+  // etc.) reference wrapping directly and would otherwise read as wrong.
+  function stepDisplayLabel(profile, idx){
+    const s = profile.steps[idx];
+    return (s.noWrapLabel && isWrapSkipped(profile)) ? s.noWrapLabel : s.label;
+  }
+
+  // The probe/checkpoint note to show for a step - swapped to a no-wrap
+  // variant when relevant (e.g. a reminder to keep spritzing through the
+  // stall on a naked cook, since there's no foil holding in moisture).
+  function stepDisplayProbe(profile, idx){
+    const s = profile.steps[idx];
+    return (s.noWrapProbe && isWrapSkipped(profile)) ? s.noWrapProbe : s.probe;
+  }
+
+  function renderMeatGrid(){
+    meatGrid.innerHTML = MEAT_PROFILES.map(p => `
+      <button class="meat-card${selectedProfile && selectedProfile.id === p.id ? ' selected' : ''}" data-id="${p.id}" type="button">
+        <span class="m-icon">${MEAT_ICONS[p.id] || ''}</span>
+        <span class="m-text">
+          <span class="m-name">${escapeHtml(p.name)}</span>
+          <span class="m-temp">${formatTempRange(p.styles.lowSlow.defaultTemp, p.styles.hotFast.defaultTemp)}</span>
+        </span>
+      </button>
+    `).join('');
+  }
+
+  function renderStyleToggle(){
+    if (!selectedProfile) return;
+    styleToggleRow.innerHTML = Object.values(BBQ_STYLES).map(s => {
+      const cfg = styleCfg(selectedProfile, s.key);
+      const active = currentStyle === s.key;
+      return `
+        <button class="style-btn${active ? ' active' : ''}" data-style="${s.key}" type="button" aria-pressed="${active}">
+          ${flameGlyph('flame-real')}
+          <span class="sb-text">
+            <span class="sb-name">${s.name}</span>
+            <span class="sb-temp">~${formatTemp(cfg.defaultTemp)}</span>
+          </span>
+        </button>`;
+    }).join('');
+    styleBlurb.innerHTML = BBQ_STYLES[currentStyle].blurb();
+  }
+
+  // Reflects currentTemp (always stored internally in Fahrenheit) into the
+  // temp input/label/note in whichever unit is currently selected.
+  function renderTempUI(){
+    if (!selectedProfile) return;
+    const cfg = styleCfg(selectedProfile, currentStyle);
+    tempUnitLabel.textContent = tempUnit === 'F' ? '\u00b0F' : '\u00b0C';
+    if (tempUnit === 'F'){
+      profileTemp.min = cfg.minTemp;
+      profileTemp.max = cfg.maxTemp;
+      profileTemp.value = currentTemp;
+    } else {
+      profileTemp.min = fToC(cfg.minTemp);
+      profileTemp.max = fToC(cfg.maxTemp);
+      profileTemp.value = fToC(currentTemp);
+    }
+    tempDefaultNote.textContent = `Recommended: ${formatTemp(cfg.defaultTemp)}`;
+  }
+
+  function openProfile(id){
+    const p = MEAT_PROFILES.find(x => x.id === id);
+    if (!p) return;
+    selectedProfile = p;
+    currentStyle = 'lowSlow';
+    currentTemp = styleCfg(p, currentStyle).defaultTemp;
+    currentWeight = p.defaultWeight;
+    profileWeight.value = currentWeight;
+    profileName.textContent = p.name;
+    // every stage starts selected/highlighted - the user opts OUT of stages they don't want
+    selectedSteps = new Set(p.steps.map((_, i) => i));
+    profilePanel.hidden = false;
+    renderMeatGrid();
+    renderStyleToggle();
+    renderTempUI();
+    renderProfileSteps();
+    profilePanel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  function closeProfile(){
+    selectedProfile = null;
+    profilePanel.hidden = true;
+    renderMeatGrid();
+  }
+
+  function clampTemp(val){
+    if (!selectedProfile) return val;
+    const cfg = styleCfg(selectedProfile, currentStyle);
+    return Math.min(cfg.maxTemp, Math.max(cfg.minTemp, val));
+  }
+
+  function setStyle(styleKey){
+    if (!selectedProfile || !BBQ_STYLES[styleKey]) return;
+    currentStyle = styleKey;
+    currentTemp = styleCfg(selectedProfile, currentStyle).defaultTemp;
+    renderStyleToggle();
+    renderTempUI();
+    renderProfileSteps();
+  }
+
+  function renderProfileSteps(){
+    if (!selectedProfile) return;
+    const wrapSkipped = isWrapSkipped(selectedProfile);
+    const cfg = styleCfg(selectedProfile, currentStyle);
+    profileSteps.innerHTML = selectedProfile.steps.map((s, i) => {
+      const mins = estimatedStepMinutes(selectedProfile, currentStyle, currentTemp, i);
+      const isSelected = selectedSteps.has(i);
+      const isBoosted = !!(s.absorbsWrap && wrapSkipped);
+      const label = stepDisplayLabel(selectedProfile, i);
+      const probe = stepDisplayProbe(selectedProfile, i);
+      let addedMin = 0;
+      if (isBoosted){
+        const baseMins = Math.round(scaleMinutes(stepBaseMinutes(selectedProfile, i, currentStyle), cfg.defaultTemp, currentTemp) * weightFactor(selectedProfile, currentWeight));
+        addedMin = Math.max(0, mins - baseMins);
+      }
+      const isCustom = hasStepOverride(selectedProfile, i, currentStyle);
+      return `
+        <div class="profile-step-row${isSelected ? ' selected' : ''}" data-idx="${i}">
+          <button class="stage-flame-toggle${isSelected ? ' selected' : ''}" data-stepidx="${i}" type="button"
+            aria-pressed="${isSelected}"
+            aria-label="${isSelected ? 'Included in this cook' : 'Skipped for this cook'} \u2014 ${escapeHtml(s.label)}"
+            title="${isSelected ? 'Included \u2014 click to skip this stage' : 'Skipped \u2014 click to include this stage'}${s.wrapStage ? ' (skipping this folds its time into the next stage \u2014 same total cook time)' : ''}">
+            ${isSelected ? flameGlyphSolid('flame-real-solid') : flameGlyph('flame-real')}
+          </button>
+          <span class="ps-body">
+            <span class="ps-label">${escapeHtml(label)}</span>
+            ${probe ? `<span class="ps-probe">${THERMO_ICON}${escapeHtml(formatProbeText(probe))}</span>` : ''}
+            ${isBoosted ? `<span class="ps-adjust">+${fmtDuration(addedMin*60)} folded in from the skipped wrap stage \u2014 total cook time is unchanged</span>` : ''}
+          </span>
+          <span class="ps-meta">
+            <span class="ps-time-wrap">
+              ${isCustom ? `<span class="ps-custom-dot" title="Custom time set for ${escapeHtml(BBQ_STYLES[currentStyle].name)}"></span>` : ''}
+              <span class="ps-time">${fmtDuration(mins*60)}</span>
+            </span>
+            <button class="ps-edit" data-stepidx="${i}" type="button" aria-label="Customize time for ${escapeHtml(label)}" title="Customize this stage's time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="ps-add" data-stepidx="${i}" type="button" aria-label="Add ${escapeHtml(label)} timer now" title="Add this step now">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </span>
+        </div>`;
+    }).join('');
+    const selectedCount = selectedSteps.size;
+    addAllStepsLabel.textContent = selectedCount === selectedProfile.steps.length
+      ? 'Start Guided Cook'
+      : `Start ${selectedCount}-Stage Guided Cook`;
+    renderTotalCookTime();
+    addAllStepsBtn.disabled = selectedCount === 0;
+  }
+
+  // Sums the (wrap-adjusted) durations of every currently-selected stage, so
+  // the user can see the total planned length of the cook before starting it.
+  function renderTotalCookTime(){
+    if (!selectedProfile) return;
+    let totalMin = 0;
+    selectedProfile.steps.forEach((s, i) => {
+      if (!selectedSteps.has(i)) return;
+      totalMin += estimatedStepMinutes(selectedProfile, currentStyle, currentTemp, i);
+    });
+    totalCookTimeValue.innerHTML = totalMin > 0 ? `~${fmtDuration(totalMin*60)} <span class="estimate-badge">estimate</span>` : '—';
+  }
+
+  function updateTemp(newTemp){
+    if (!selectedProfile) return;
+    currentTemp = clampTemp(newTemp);
+    renderTempUI();
+    renderProfileSteps();
+  }
+
+  meatGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('.meat-card');
+    if (!card) return;
+    ensureAudioCtx();
+    if (selectedProfile && selectedProfile.id === card.dataset.id){
+      closeProfile();
+    } else {
+      openProfile(card.dataset.id);
+    }
+  });
+
+  profileClose.addEventListener('click', closeProfile);
+
+  // Clicking anywhere outside the open profile panel (and not on a meat card,
+  // which has its own open/close toggle, or the header's global controls)
+  // returns to the home view. Any timers already running are untouched - the
+  // tick loop keeps counting them down in the background regardless of
+  // whether the profile panel is open or closed.
+  // Uses composedPath() (a snapshot taken when the event was dispatched)
+  // rather than e.target/contains(), because some in-panel controls (style
+  // buttons, stage toggles) re-render their own DOM on click - by the time a
+  // plain click bubbles up to document, e.target may already be a detached
+  // node from before that re-render, which would make a live containment
+  // check wrongly report "outside" and close the panel it was clicked in.
+  const headerEl = document.querySelector('header.top');
+  document.addEventListener('click', (e) => {
+    if (profilePanel.hidden) return;
+    const path = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+    if (path.includes(profilePanel)) return;
+    if (headerEl && path.includes(headerEl)) return;
+    if (path.some(n => n.classList && n.classList.contains('meat-card'))) return;
+    // Any modal dialog (confirm, preset editor, stage-time editor - they all
+    // share the .confirm-overlay base class) sits outside profilePanel in the
+    // DOM. Without this, clicking Save/Cancel/Reset inside one of them would
+    // bubble up and incorrectly close the profile panel behind it too.
+    if (path.some(n => n.classList && n.classList.contains('confirm-overlay'))) return;
+    closeProfile();
+  });
+
+  // The "Pit Master Timer" brand/logo in the upper-left is an explicit "go
+  // home" action: it closes the open meat profile panel (if any) and scrolls
+  // back to the top, even though clicks elsewhere in the header are exempt
+  // from the outside-click-closes rule above. Timers are unaffected - they
+  // keep counting down in the background regardless of what's open.
+  const brandHome = document.getElementById('brandHome');
+  function goHome(){
+    ensureAudioCtx();
+    if (!profilePanel.hidden) closeProfile();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  brandHome.addEventListener('click', goHome);
+  brandHome.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      goHome();
+    }
+  });
+
+  styleToggleRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.style-btn');
+    if (!btn) return;
+    ensureAudioCtx();
+    setStyle(btn.dataset.style);
+  });
+
+  profileTemp.addEventListener('change', () => {
+    const val = parseInt(profileTemp.value, 10);
+    if (isNaN(val)){
+      updateTemp(styleCfg(selectedProfile, currentStyle).defaultTemp);
+      return;
+    }
+    // the input shows/accepts whichever unit is currently selected - convert to
+    // Fahrenheit (the internal unit) before clamping and recalculating steps.
+    updateTemp(tempUnit === 'F' ? val : cToF(val));
+  });
+  tempDown.addEventListener('click', () => {
+    ensureAudioCtx();
+    updateTemp((currentTemp || styleCfg(selectedProfile, currentStyle).defaultTemp) - 5);
+  });
+  tempUp.addEventListener('click', () => {
+    ensureAudioCtx();
+    updateTemp((currentTemp || styleCfg(selectedProfile, currentStyle).defaultTemp) + 5);
+  });
+
+  profileWeight.addEventListener('input', () => {
+    if (!selectedProfile) return;
+    const value = parseFloat(profileWeight.value);
+    currentWeight = Number.isFinite(value) ? Math.max(.5, Math.min(40, value)) : selectedProfile.defaultWeight;
+    renderProfileSteps();
+  });
+
+  profileSteps.addEventListener('click', (e) => {
+    if (!selectedProfile) return;
+    const toggleBtn = e.target.closest('.stage-flame-toggle');
+    if (toggleBtn){
+      ensureAudioCtx();
+      const idx = Number(toggleBtn.dataset.stepidx);
+      if (selectedSteps.has(idx)) selectedSteps.delete(idx);
+      else selectedSteps.add(idx);
+      renderProfileSteps();
+      return;
+    }
+    const editBtn = e.target.closest('.ps-edit');
+    if (editBtn){
+      ensureAudioCtx();
+      openStepEditor(Number(editBtn.dataset.stepidx));
+      return;
+    }
+    const addBtn = e.target.closest('.ps-add');
+    if (addBtn){
+      ensureAudioCtx();
+      const idx = Number(addBtn.dataset.stepidx);
+      const mins = estimatedStepMinutes(selectedProfile, currentStyle, currentTemp, idx);
+      createTimer(`${selectedProfile.name} - ${stepDisplayLabel(selectedProfile, idx)}`, mins*60);
+    }
+  });
+
+  addAllStepsBtn.addEventListener('click', () => {
+    if (!selectedProfile || selectedSteps.size === 0) return;
+    ensureAudioCtx();
+    startGuidedCook(selectedProfile, currentStyle, currentTemp, currentWeight, [...selectedSteps].sort((a,b)=>a-b));
+  });
+
+  /* ---------------- Stage time customization ----------------
+     Lets the user override how long any individual cook stage (e.g.
+     brisket's "First Spritz / Bark Check") takes, per profile and per
+     style (Low & Slow / Hot & Fast). Saved to localStorage so it persists,
+     and still scales with temp/weight adjustments like the built-in times. */
+  let stepEditIdx = null;
+  function openStepEditor(idx){
+    if (!selectedProfile) return;
+    const step = selectedProfile.steps[idx];
+    if (!step) return;
+    stepEditIdx = idx;
+    const baseMins = stepBaseMinutes(selectedProfile, idx, currentStyle);
+    stepEditHours.value = Math.floor(baseMins / 60);
+    stepEditMinutes.value = baseMins % 60;
+    stepEditSub.textContent = `${stepDisplayLabel(selectedProfile, idx)} — ${selectedProfile.name} — ${BBQ_STYLES[currentStyle].name}`;
+    stepEditResetBtn.disabled = !hasStepOverride(selectedProfile, idx, currentStyle);
+    stepEditError.hidden = true;
+    stepEditOverlay.classList.add('show');
+    setTimeout(() => stepEditHours.focus(), 50);
+  }
+  function closeStepEditor(){
+    stepEditOverlay.classList.remove('show');
+    stepEditIdx = null;
+  }
+  stepEditSaveBtn.addEventListener('click', () => {
+    if (stepEditIdx === null || !selectedProfile) return;
+    const hours = Math.max(0, Math.min(24, parseInt(stepEditHours.value, 10) || 0));
+    const minutes = Math.max(0, Math.min(59, parseInt(stepEditMinutes.value, 10) || 0));
+    const totalMinutes = hours*60 + minutes;
+    if (totalMinutes <= 0){
+      stepEditError.textContent = 'Set a time greater than 0 before saving.';
+      stepEditError.hidden = false;
+      return;
+    }
+    setStepOverride(selectedProfile, stepEditIdx, currentStyle, totalMinutes);
+    renderProfileSteps();
+    closeStepEditor();
+  });
+  stepEditCancelBtn.addEventListener('click', closeStepEditor);
+  stepEditResetBtn.addEventListener('click', () => {
+    if (stepEditIdx === null || !selectedProfile) return;
+    clearStepOverride(selectedProfile, stepEditIdx, currentStyle);
+    renderProfileSteps();
+    closeStepEditor();
+  });
+  stepEditOverlay.addEventListener('click', (e) => {
+    if (e.target === stepEditOverlay) closeStepEditor();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && stepEditOverlay.classList.contains('show')) closeStepEditor();
+  });
+
+  /* ---------------- Presets ---------------- */
+  function renderPresets(){
+    presetGrid.innerHTML = PRESETS.map((p, i) => `
+      <div class="preset-card">
+        <button class="preset-btn" data-idx="${i}" type="button">
+          <span class="p-icon">${ICONS[p.icon] || ''}</span>
+          <span class="p-text">
+            <span class="p-time">${presetTag(p.seconds)}</span>
+            <span class="p-label">${escapeHtml(p.label)}</span>
+          </span>
+        </button>
+        <button class="preset-edit" data-idx="${i}" type="button" aria-label="Customize this preset" title="Customize name & time">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
+  presetGrid.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.preset-edit');
+    if (editBtn){
+      ensureAudioCtx();
+      openPresetEditor(Number(editBtn.dataset.idx));
+      return;
+    }
+    const btn = e.target.closest('.preset-btn');
+    if (!btn) return;
+    ensureAudioCtx();
+    const p = PRESETS[Number(btn.dataset.idx)];
+    createTimer(p.label, p.seconds);
+  });
+
+  /* ---------------- Favorites (saved custom timers) ---------------- */
+  function renderFavorites(){
+    if (favorites.length === 0){
+      favoritesSection.hidden = true;
+      favoriteGrid.innerHTML = '';
+      return;
+    }
+    favoritesSection.hidden = false;
+    favoriteGrid.innerHTML = favorites.map(f => `
+      <div class="favorite-chip" data-id="${f.id}">
+        <span class="fav-text">
+          <span class="fav-label">${escapeHtml(f.label)}</span>
+          <span class="fav-time">${fmtDuration(f.seconds)}</span>
+        </span>
+        <button class="favorite-remove" data-id="${f.id}" type="button" aria-label="Remove saved timer" title="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
+  favoriteGrid.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.favorite-remove');
+    if (removeBtn){
+      favorites = favorites.filter(f => f.id !== removeBtn.dataset.id);
+      saveFavorites();
+      renderFavorites();
+      return;
+    }
+    const chip = e.target.closest('.favorite-chip');
+    if (!chip) return;
+    ensureAudioCtx();
+    const f = favorites.find(x => x.id === chip.dataset.id);
+    if (f) createTimer(f.label, f.seconds);
+  });
+  saveFavoriteBtn.addEventListener('click', () => {
+    ensureAudioCtx();
+    const h = Math.max(0, parseInt(hrsInput.value,10) || 0);
+    const m = Math.max(0, parseInt(minsInput.value,10) || 0);
+    const s = Math.max(0, parseInt(secsInput.value,10) || 0);
+    const total = h*3600 + m*60 + s;
+    if (total <= 0){ hrsInput.focus(); return; }
+    const label = labelInput.value.trim() || 'Timer';
+    favorites.unshift({ id: uid(), label, seconds: total });
+    if (favorites.length > 12) favorites = favorites.slice(0, 12);
+    saveFavorites();
+    renderFavorites();
+    saveFeedback.classList.add('show');
+    setTimeout(() => saveFeedback.classList.remove('show'), 1600);
+  });
+
+  /* ---------------- Custom timer form ---------------- */
+  addCustomBtn.addEventListener('click', () => {
+    ensureAudioCtx();
+    const h = Math.max(0, parseInt(hrsInput.value,10) || 0);
+    const m = Math.max(0, parseInt(minsInput.value,10) || 0);
+    const s = Math.max(0, parseInt(secsInput.value,10) || 0);
+    const total = h*3600 + m*60 + s;
+    if (total <= 0){
+      hrsInput.focus();
+      return;
+    }
+    createTimer(labelInput.value, total);
+    labelInput.value = '';
+    labelInput.focus();
+  });
+  [hrsInput, minsInput, secsInput, labelInput].forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addCustomBtn.click();
+    });
+  });
+
+  /* ---------------- Global controls ---------------- */
+  pauseAllBtn.addEventListener('click', () => { ensureAudioCtx(); pauseAll(); });
+  resumeAllBtn.addEventListener('click', () => { ensureAudioCtx(); resumeAll(); });
+  clearFinBtn.addEventListener('click', () => { ensureAudioCtx(); clearFinished(); });
+
+  /* ---------------- Temperature unit toggle ---------------- */
+  function refreshUnitUI(){
+    unitToggle.querySelectorAll('.unit-btn').forEach(b => {
+      const active = b.dataset.unit === tempUnit;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', String(active));
+    });
+    renderMeatGrid();
+    if (selectedProfile){
+      renderStyleToggle();
+      renderTempUI();
+      renderProfileSteps();
+    }
+    render();
+  }
+  unitToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.unit-btn');
+    if (!btn) return;
+    ensureAudioCtx();
+    tempUnit = btn.dataset.unit;
+    saveTempUnit();
+    refreshUnitUI();
+  });
+
+  /* ---------------- Sound toggle ---------------- */
+  function refreshSoundUI(){
+    soundToggle.classList.toggle('on', soundOn);
+    soundToggle.setAttribute('aria-pressed', String(soundOn));
+    soundToggle.querySelector('.lbl').textContent = soundOn ? 'Sound On' : 'Muted';
+    soundIcon.innerHTML = soundOn
+      ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>'
+      : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+  }
+  soundToggle.addEventListener('click', () => {
+    ensureAudioCtx();
+    soundOn = !soundOn;
+    saveSound();
+    refreshSoundUI();
+    if (soundOn) playChime();
+  });
+
+  /* ---------------- Voice toggle ---------------- */
+  function refreshVoiceUI(){
+    const supported = !!window.speechSynthesis;
+    voiceToggle.classList.toggle('on', voiceOn && supported);
+    voiceToggle.setAttribute('aria-pressed', String(voiceOn && supported));
+    voiceToggle.disabled = !supported;
+    voiceToggle.title = supported ? 'Announce timer names out loud when they finish' : 'Voice alerts are not supported in this browser';
+    voiceToggle.querySelector('.lbl').textContent = (voiceOn && supported) ? 'Voice On' : 'Voice Off';
+  }
+  voiceToggle.addEventListener('click', () => {
+    if (!window.speechSynthesis) return;
+    ensureAudioCtx();
+    voiceOn = !voiceOn;
+    saveFlag(LS_VOICE, voiceOn);
+    refreshVoiceUI();
+    if (voiceOn){
+      speakNatural("Voice alerts are on — I'll give you a heads-up when a timer's done.");
+    }
+  });
+
+  /* ---------------- Notification toggle ---------------- */
+  function refreshNotifyUI(){
+    const supported = 'Notification' in window;
+    const blocked = supported && Notification.permission === 'denied';
+    const active = notifyOn && supported && Notification.permission === 'granted';
+    notifyToggle.classList.toggle('on', active);
+    notifyToggle.setAttribute('aria-pressed', String(active));
+    notifyToggle.disabled = !supported || blocked;
+    notifyToggle.title = !supported
+      ? 'Notifications are not supported in this browser'
+      : blocked
+        ? 'Notifications are blocked - enable them in your browser settings'
+        : 'Get a system notification when a timer finishes';
+    notifyToggle.querySelector('.lbl').textContent = blocked ? 'Blocked' : (active ? 'Alerts On' : 'Alerts Off');
+  }
+  notifyToggle.addEventListener('click', async () => {
+    if (!('Notification' in window)) return;
+    ensureAudioCtx();
+    if (Notification.permission === 'denied') { refreshNotifyUI(); return; }
+    if (Notification.permission === 'default'){
+      const result = await Notification.requestPermission();
+      if (result === 'granted'){
+        notifyOn = true;
+        saveFlag(LS_NOTIFY, true);
+        new Notification('BBQ Pit-Master Timer', { body: 'Alerts are on - you\u2019ll be notified when a timer finishes.', silent: true });
+      }
+      refreshNotifyUI();
+      return;
+    }
+    // already granted - just toggle our own preference on/off
+    notifyOn = !notifyOn;
+    saveFlag(LS_NOTIFY, notifyOn);
+    refreshNotifyUI();
+  });
+
+  /* ---------------- Notes drawer ---------------- */
+  cookLog.value = loadNotes();
+  let notesSaveTimeout = null;
+  cookLog.addEventListener('input', () => {
+    clearTimeout(notesSaveTimeout);
+    notesSaveTimeout = setTimeout(saveNotes, 300);
+    notesBadge.style.display = cookLog.value.trim() && !notesDrawer.classList.contains('open') ? 'inline-flex' : 'none';
+  });
+  drawerToggle.addEventListener('click', () => {
+    const isOpen = notesDrawer.classList.toggle('open');
+    drawerToggle.classList.toggle('open', isOpen);
+    drawerToggle.setAttribute('aria-expanded', String(isOpen));
+    notesBadge.style.display = !isOpen && cookLog.value.trim() ? 'inline-flex' : 'none';
+    if (isOpen) setTimeout(() => cookLog.focus(), 200);
+  });
+  timestampBtn.addEventListener('click', () => {
+    const stamp = `${nowClock()} — `;
+    const needsNewline = cookLog.value.length > 0 && !cookLog.value.endsWith('\n');
+    cookLog.value += (needsNewline ? '\n' : '') + stamp;
+    saveNotes();
+    cookLog.focus();
+    cookLog.selectionStart = cookLog.selectionEnd = cookLog.value.length;
+  });
+  copyLogBtn.addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(cookLog.value);
+    }catch(e){
+      cookLog.select();
+      document.execCommand('copy');
+    }
+    copyFeedback.classList.add('show');
+    setTimeout(() => copyFeedback.classList.remove('show'), 1800);
+  });
+
+  /* ---------------- Init ---------------- */
+  function init(){
+    renderMeatGrid();
+    renderPresets();
+    refreshSoundUI();
+    refreshVoiceUI();
+    refreshNotifyUI();
+    refreshUnitUI();
+    // recompute status for timers loaded from storage (in case time passed while closed)
+    timers.forEach(t => {
+      if (t.status === 'active'){
+        const remaining = Math.round((t.endTime - Date.now())/1000);
+        if (remaining <= 0){
+          t.remainingSeconds = 0;
+          t.status = 'done';
+        } else {
+          t.remainingSeconds = remaining;
+        }
+      }
+    });
+    saveTimers();
+    render();
+    setInterval(tick, 500);
+  }
+
+  init();
+
+  // Unlock audio context on first user gesture anywhere on the page
+  const unlock = () => { ensureAudioCtx(); document.removeEventListener('click', unlock); document.removeEventListener('touchstart', unlock); };
+  document.addEventListener('click', unlock, { once:true });
+  document.addEventListener('touchstart', unlock, { once:true });
+
+})();
+</script>
+</body>
+</html>
